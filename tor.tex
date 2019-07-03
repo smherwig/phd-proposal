@@ -3,6 +3,43 @@
 %    What problems are you trying to solve
 %    carve out the space
 
+We take a deep look at Tor's onion services (previously called hidden
+services).  
+%
+Our central premise is that the onion service protocols and
+best practices are inflexible and restrict the deployment of such services.
+%
+Specifically, there are few options for an onion service operator to customize
+and modulate the availability, performance, privacy guarantees, or usability of
+their service.
+%
+These restrictions stand in stark contrast to the myriad deployment options
+available to a service operator on the normal Internet.
+
+
+We first describe how onion services work.
+%
+We then validate our premise: we identify the key pain points in deploying an
+onion service, and describe various approaches that the Tor community has
+proposed and implemented to address these issues.
+%
+We establish the insufficiency of these approaches, but also their commonality.
+In particular, the existent solutions seek ad-hoc extensions to Tor, either
+formally, via revisions to the protocol specifications, or externally, through
+cooperating services that interact with Tor nodes.
+
+
+We then propose our thesis: namely, that it is possible to build a generic extension
+mechanism into Tor that allows for increased onion service availability,
+performance, privacy guarantees, and usability, without reducing the privacy
+properties of the the system vis-a-vis the current Tor ecosystem (unless the
+onion service expressly chooses such a trado-off).
+%
+In this document, rather than propose a specific solution, we take the first
+steps to explore the design space, identify the challenges, arrive at the
+desired properties, and compare our approach to the existent solutions.
+
+
 
 \subsection{Overview}
 % describe the system and the core problem as it relates to this system
@@ -11,6 +48,316 @@
 \subsection{Related Work}
 % describe any related work that has tried to solve this problem and the
 % tradeoffs of those solutions
+
+\subsection{Availability}
+
+\subsubsection{Service Scaling}
+
+In Tor, there is a tussle between service scaling and service anonymity:
+it is difficult to strengthen one without weakening the other.
+%
+This was not the intent in the original design of Tor, but rather evolved from
+numerous deanonymization attacks that highlighted the need to restrict an onion
+service's path selection.
+%
+In other words, while an operator can spin up multiple replicas, for
+anonymity-sake, the replicas are contrained to use the same small set of paths;
+thus replication is illusory, as it can only scale to the max bandwidth of the
+shared paths, rather than the bandwidth of the network.
+%
+We briefly describe these attacks.
+
+
+A major privacy consideration in Tor is a client or onion service's
+selection of the first relay in its circuit: if an adversary can observe the
+edges of a circuit, then, based on traffic signatures, she can confirm
+who is communicating.  
+%
+In the case of onion services, an attacker can trivially be both the client
+and rendezvous point, and thus observe these portions of the circuit.
+%
+This means that the service is susceptible to de-anonymization in \emph{every}
+communication path: the attacker simply must determine that one of her relay's
+is on the service's half of the rendezvous circuit, and that this relay is the
+service's first hop.
+
+% cite: [06-oakland] locating hidden server 
+Outlines four low-resource techniques for an attacker to
+determine whether her relay is the onion service's entry node.
+%
+The paper then outlines a probabilistic defense (which later became a default
+Tor practice)  in which the onion service pins its entry node to a particular
+relay (now called the \emph{Guard} node), rather than choose an entry node
+at random for each new circuit.
+% TODO: can cite guard-spec.txt
+
+
+However, these attacks, as well as others (trolling) still allow an attacker to
+discover the Guard node.
+%
+The concern is then that a Guard discovery attack, combined with a comprosimie
+and/or coercion of the Guard node, may lead to the deanonymiation of the onion
+service.
+
+
+Proposal 292 proposes and implements (partly in Tor, partly via Stem) an option
+for an onion service to also pin its second and third hops to a a small set of 
+relays.
+%
+The result is a small tree of relays, termed a vanguard mesh, through which the
+onion service constructs its circuits.
+%
+With this new path selection, an attakcer is forced to composomise one or more
+nodes before learnign the guard node of an ionion service.
+%
+Additionally, to avoid linkability, the proposal also inserts an extra middle
+node after the thrid layer guard/node for client-side intro and hsdir ciruits,
+and service-side rendezvous circuits.
+
+%
+% TODO: An Anonymity System for caching content
+% Tor doesn't do this.  One sentence on:
+%   However, the idea of hiding the location of a document (or
+%   encyrpted fragment of a document), perhaps within the peer-to-peer network,
+%   underlies many censorship-resistent publishing designs such as Freenet,
+%   Free Haven, and Tangler.
+%
+% TODO: A few sentences on that POC of running a DHT over Tor and the issues with
+% this.
+
+
+\subsubsection{Load Balancing}
+% Desirable Goals:
+%   - Obscure the number of hidden service instances.
+%
+%   - No master hidden service instance
+%
+%   - If there is a master hidden service instance, have clean
+%      fail-over from one master to the next, undetectable by the network.
+%
+%   - Obscure which instances are up and which are down.
+
+While a hidden service may run an application-level load balancer (for
+instance, HAProxy) to dispatch connections and application-level
+requests to various backend replicas,  such a solution places the load-balancer
+on the critical path, and thus positions it as a potential bottleneck.  
+%
+As a result, we are interested in load-balancing solutions that redirect a
+client to a different service replica \emph{before} the client even connects to
+the service.
+%
+Normal Internet services achieve this form of load-balancing by interposing
+at the DNS and routing level.
+%
+The loose analogues in the Tor network are to interpose at the HSDir and
+Introduction-level, respectively. 
+%
+We describe the current approaches to load-balancing at each of these levels.
+
+\parhead{HSDir Level}
+
+\begin{widelist}
+\item \textbf{OnionBalance}
+% TODO: need to cite how much load-balancing this achieves.
+% cite: https://onionbalance.readthedocs.io/en/latest/design.html
+is a service external to Tor.  The key idea is that an onion service operator
+publishes a different descriptor to the HSDirs for each replica; each
+descriptor specifies a different set of Introduction Points.
+% 
+The operator then runs OnionBalance, which exhaustively looks up the descriptor
+for each replica, and publishes a new descriptor (under the the service's
+well-known \texttt{.onion} name) that includes a sample of the replicas'
+Introduction Points (recall that V2 descriptors are limited to 10
+Introduction Points, and V3 to 20).
+%
+OnionBalance also includes a mode whereby replicas \emph{push} their
+Introduction Points to the OnionBalance process over a secure channel,
+which prevents certain enumeration attacks by a malicious HSDir in the case
+of V2 descriptors.
+%
+Since the default Tor client randomly chooses an Introduction Point from those
+in the descriptor; OnionBalance distributes clients evenly across the
+different replicas.
+
+% issues:
+%   - not very adaptive (slow failover, etc.)
+%   - number of advertised introduction points is limted
+%   - the secure channel mode is unspecified, would likely occur over a Tor
+%     hidden service for the OnionBalance process, and thus makes this
+%     hidden service a single point of failure for the replicas, leading
+%     to infinite recursion (turtles all the way down)
+
+
+\item \textbf{Multi descriptor publishing}
+% cite [15-theses] Tor: Hidden Service Scaling
+
+Recall that an onion service publishes its descriptor to multiple HSDirs
+(historically six, now eight), both as a means of handling churn in the HSDirs,
+as well as to spread the load of HSDir lookups.
+%
+The idea of multi-descriptor publishing is for an onion service to provide
+each of these HSDirs with a descriptor for the \texttt{.onion} address, but
+with a set of different Introduction Points.
+%
+This approach is complimentary to the use of OnionBalance.
+\end{widelist}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\parhead{Introduction Level}
+
+\begin{widelist}
+
+\item \textbf{Prop-255}
+% cite: proposals/255-hs-load-balancing.txt 
+decouples \emph{introduction} from \emph{rendezvous},
+by allowing one replica to service the introduction, and another to create the
+rendezvous circuit.
+%
+The proposal outlines an extension to Tor's control specification to allow a
+replica to process the introduction request and hand off the remaining steps
+to an external process; the external process then dispatches another
+replica with the necessary state to form the rendezvous circuit.
+
+
+\item \textbf{Load-Balancing at the Introduction Point}
+% https://lists.torproject.org/pipermail/tor-dev/2013-October/005556.html
+% http://tor.stackexchange.com/questions/13/can-a-hidden-service-be-hosted-by-multiple-instances-of-tor/24#24
+seeks an extension to Tor whereby multiple onion service replicas maintain a
+long-term connection to an Introduction Point; the Introduction Point then
+schedules (for instance, round-robins) introduction requests for that service
+among the set of connected replicas.
+
+% TODO: What is revealed by having HS replicas build circuits to common Introduction
+% Points?
+
+\end{widelist}
+
+\subsubsection{DoS Defense}
+
+One of Tor's original goal was the condition that taking down an onion service
+implied taking down the entire Tor network (TODO: need cite, probably 04-sec).
+%
+Numerous attacks that targeted only a small number of relays belied this goal.
+
+
+\parhead{Valets Services}
+% cite [06-pets] Valet Services: Improving Hidden Servers with a Personal Touch
+% cite [07-pets] Improving efficiency and simplcity of Tor circuit
+%                establishment and hidden services
+Valet services is a design proposal for mitigating denial of service attacks
+against the Introduction Points.
+
+
+A Valet is a normal Tor relay that sits in front of an onion service's
+Introduction Point (from the perspective of a client).
+%
+Valets hide the Introduction Points from the clients, and, in turn, Valets do
+not directly know the onion service that they protect.
+
+
+The Valet design assumes the existence of a directory service (something like the
+DHT for HSDirs) to which onion services publish tickets and clients retrieve
+tickets, as well as a mechanism for an onion service to provision the
+Introduction Points with necessary information to validate tickets.
+%
+The tickets themselves contain one-use tokens, encrypted with a Valet node's
+public key, that specify that the Valet may connect to a certain Introduction
+Point as part of a client's introduction to given onion service: the onion service
+is masked to the Valet but known to the Introduction Point.
+
+
+Valets chiefly change the topology of an onion service's contact points from a
+flat array of Introduction Points to a two-level tree  where the Valet level
+can contain many more nodes than the Introduction Point level.
+%
+In this way, it is more difficult for an attacker to focus a DoS attack on a
+specific Introduction Point.
+
+
+\parhead{Proposal 305}
+
+Proposal 305 proposes an extension to the Tor relay's denial-of-service
+subsystem so that an onion service may specify to an Introduction Point the
+limits (via an extension to the \texttt{ESTABLISH\_INRO} cell) on the rate of
+introductions the Introduction Point relays to the onion service, rather than
+use the limits specified in the network-wide consensus parameters.
+%
+The proposal also suggests a new cell type that the Introduction Point sends
+back to the onion service when the rate limit is exceeded, so that the onion
+service may decide how to respond to the event.
+
+
+\parhead{Onion Service Authentication}
+
+% TODO: there is authentication baked into multiple levels of the onion service
+% spec.  Certainly one of the purposes of this is to prevent DoS by delaying an
+% onion service to actually commiting resources until the client seems legit.
+% IIRC, very few services use this.
+
+
+\subsection{Performance}
+% TODO:
+%   obviously, availability is related to performance; so here, we're concerned
+%   with the fact that onion services are slow, and the hypothesis is that
+%   they're slow because the circuit is longer than normal circuit.
+%
+%   TODO: talk about work that tries to make the circuit shorter, as by merging
+%   the Introduction Point with RP.
+%
+%   TODO: talk about different onion flavors: single-hop onions and exit
+%   enclaves
+%
+%
+%   [07-pets] improving efficiency and simplicity of Tor circuit establishment
+%             and hidden services
+%
+%
+%   [07-thesis] performacne evalution of tor hidden services
+%
+%   [08-saint] performance-metrics-and-statistics-of-hidden-services
+%       read, not much there other than some discussion of cannabilization
+%       the first author of this and the 07-thesis paper are the same
+%       [07-pets] is the biggest prior work
+%
+%   [08-thesis] improving tor hidden service protocol 
+%       this is a coauthro of the 08-saint paper
+%       good description of tarzan, i2p, p5
+%       I think the point of this paper is that it implements [07-pets]
+%       and evaluates the performance after these modifiations.
+%
+%
+%   [13-thesis] performance of hidden services in tor
+%   [15-techreport] hidden service stats techreport
+%   [16-unknown] performance-and-security-improvements-for-tor
+%
+
+\subsection{Privacy Guarantees}
+% TODO: talk about geographic and ASN routing, and how its hard to extend to
+%       onion services.  The general problem is that there are all different
+%       flavors of relay selection algorithms for clients, but these don't
+%       translate to Introduction Point and RP circuits, since half of the
+%       circuit is not under the client's control.
+%
+% TODO: might be pedantic (I don't know all of the details) but it relates to
+%       what information an onion service leaks (by necessity) to the Tor
+%       network, and to which nodes in the network.
+%
+%   [06-blackhat] locating hidden services
+%   [11-wifs] fingerpritning tors hidden service logs using timing side channel
+%   [15-sec] circuit fingerprinting attacks deanonymize hidden services
+%   [15-ccs] caronte-detecting locaitno leaks for deanonymizing hidden services
+%   [16-sec] identifying and characterizing sybils in the tor network
+%   [16-ccs] poster fingerpritning tor hidden services
+%   [17-wpes] analysis of fingerprinting techniques for tor hidden services
+
+\subsection{Usability}
+% TODO:
+%   The biggest usabilty challenges are
+%       - human-readable names for onion addresses,
+%       - onion service discoverability (if desired)
+%           - no search engine or indexing is currently available
+%       - composing onion addresses with HTTPS certs
 
 
 \subsection{Prior or Proposed Work}
