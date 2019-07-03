@@ -1,2 +1,30 @@
 \begin{abstract}
+% 3 - 4 nice paragraphs:
+Web service deployment suffers from a tradeoff between availability and
+security: in order to increase availability, the service must shift the
+deployment to third-parties; however, by assisting in the deployment, the
+third-party gains sensitive information about that service.
+
+
+I ask whether it is possible to reduce, if not eliminate, this tradeoff.
+% 
+I propose to design and implement systems that allow a web service to off-load
+deployment tasks onto untrusted third-parties, while maintaining the same
+security guarantees as if the service was deployed in-house.  
+% 
+To reduce adoption concerns, my approach is to extend existent systems for web
+service deployment, and preserve theses systems' division of
+responsibilities between the cooperating parties, rather than propose new
+architectures for the web.
+    
+
+I explore the problem from a cross-section of the available options for
+deploying a web service.
+%  
+In particular, I investigate deploying a web service (1) over a content
+delivery network, (2) as a Tor hidden service, and (3), on the
+decentralized web.  
+%    
+Each option entails a different operating and network environment, and reflects
+distinct service preferences with regards to privacy and persistence.
 \end{abstract}
