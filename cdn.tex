@@ -17,13 +17,6 @@ As the web shifts from HTTP to HTTPS, CDNs continue to provide such services by
 also assuming control of their customers' private keys, thereby breaking a
 fundamental security principle: private keys must only be known by their owner.
 
-We present the design and implementation of Phoenix, the first truly ``keyless
-CDN''.  Phoenix uses secure enclaves (in particular Intel SGX) to host web
-content, store sensitive key material, apply web application firewalls, and
-more on untrusted machines.  To support scalability and multi-tenancy, Phoenix
-is built around a new architectural primitive which we call \emph{conclaves}:
-containers of enclaves.  Conclaves make it straightforward to deploy
-multi-process, scalable, legacy applications.
 %% 
 %
 %% a reverse caching proxy
@@ -34,11 +27,6 @@ multi-process, scalable, legacy applications.
 %% order to ensure the integrity and, optionally, confidentiality, of any cached
 %% content, 
 %% 
-We also develop a filesystem to extend the enclave's security
-guarantees to untrusted storage. In its strongest configuration,Phoenix
-reduces the knowledge of the edge server to that of a traditional on-path HTTPS
-adversary. We evaluate the performance of Phoenix with a series of micro- and
-macro-benchmarks.
 
 %% /////////////////////////////////////////////////////////
 % INTRODUCTION
@@ -92,25 +80,6 @@ And yet, running a WAF on a CDN requires the CDN to have access to the
 website's unencrypted traffic.
 
 
-There have been recent advances to address aspects of this problem,
-most notably Cloudflare's Keyless SSL~\cite{keyless-ssl}, which is a
-protocol that allows CDN customers to maintain sole ownership of their
-private keys.
-%
-However, even with Keyless SSL, the CDN learns all session keys,
-yielding little additional assurance against eavesdropping or
-impersonation.
-%
-The ideal solution would allow for all requisite processing and
-functionality to be performed on encrypted data, so that the CDN
-operator is neither responsible for holding the keys nor able to see
-any of the data through it.
-%
-However, even the state of the art in this
-area~\cite{naylor2015multi,naylor2017and,leematls,desmoulins2018pattern,
-sherry2015blindbox, canard2017blindids,lan2016embark} is much too
-inefficient to be utilized at the scale and performance that would be
-expected of a CDN.
 
 
 
@@ -136,52 +105,6 @@ We introduce a new general-purpose architectural primitive we call
 %
 Conclaves facilitate the deployment, configuration, and dynamic
 scaling-up and -down of sophisticated legacy (unmodified) applications.
-
-
-\parhead{Contributions}
-%
-We make the following contributions:
-
-\begin{widelist}
-
-\item We present the first truly ``keyless CDN,'' which we call Phoenix.
-	Phoenix performs all of the quintessential tasks of today's CDNs,
-	without requiring CDNs to gain access to sensitive key material,
-	and without having to change legacy web applications.
-
-\item To realize our design, we introduce a new architectural primitive
-	called \emph{conclaves}, which creates a microkernel out of secure
-	enclaves.  Conclaves offer the abstraction of a ``container of
-	enclaves,'' thereby making it straightforward to deploy
-	multi-process, scalable, legacy applications within a dynamic
-	number of enclaves.
-
-\item We present a detailed design and implementation of Phoenix, and
-	evaluate it on Intel SGX hardware. Our results indicate that
-	conclaves scale to support multi-tenant deployments.
-
-\item Based on our results, we suggest improvements that could be made
-	to Linux and SGX to better support high-performance, multi-process
-	enclaved applications.
-
-
-\end{widelist}
-
-\parhead{Roadmap}
-%
-The rest of this paper is organized as follows.
-%
-We describe the essential features of today's CDNs and distill a set of
-goals and threat models in \S\ref{sec:background}.
-%
-We review related work in \S\ref{sec:prior}.
-%
-We present the design of conclaves and of Phoenix in \S\ref{sec:design},
-and their implementation in \S\ref{sec:implementation}.
-%
-We present our evaluation in \S\ref{sec:eval} and conclude in
-\S\ref{sec:conclusion}.
-
 
 
 %% /////////////////////////////////////////////////////////
@@ -617,6 +540,47 @@ over~\cite{securing-cdns}.
 %% /////////////////////////////////////////////////////////
 % PRIOR WORK
 %% /////////////////////////////////////////////////////////
+
+%There have been recent advances to address aspects of this problem,
+%most notably Cloudflare's Keyless SSL~\cite{keyless-ssl}, which is a
+%protocol that allows CDN customers to maintain sole ownership of their
+%private keys.
+%%
+%However, even with Keyless SSL, the CDN learns all session keys,
+%yielding little additional assurance against eavesdropping or
+%impersonation.
+%%
+%The ideal solution would allow for all requisite processing and
+%functionality to be performed on encrypted data, so that the CDN
+%operator is neither responsible for holding the keys nor able to see
+%any of the data through it.
+%%
+%However, even the state of the art in this
+%area~\cite{naylor2015multi,naylor2017and,leematls,desmoulins2018pattern,
+%sherry2015blindbox, canard2017blindids,lan2016embark} is much too
+%inefficient to be utilized at the scale and performance that would be
+%expected of a CDN.
+
+
+There have been recent advances to address aspects of this problem,
+most notably Cloudflare's Keyless SSL~\cite{keyless-ssl}, which is a
+protocol that allows CDN customers to maintain sole ownership of their
+private keys.
+%
+However, even with Keyless SSL, the CDN learns all session keys,
+yielding little additional assurance against eavesdropping or
+impersonation.
+%
+The ideal solution would allow for all requisite processing and
+functionality to be performed on encrypted data, so that the CDN
+operator is neither responsible for holding the keys nor able to see
+any of the data through it.
+%
+However, even the state of the art in this
+area~\cite{naylor2015multi,naylor2017and,leematls,desmoulins2018pattern,
+sherry2015blindbox, canard2017blindids,lan2016embark} is much too
+inefficient to be utilized at the scale and performance that would be
+expected of a CDN.
 
 Before describing our solution, we review prior work in terms of how they have
 achieved the goals outlined in \S\ref{sec:goals}.  There have been a variety of
@@ -1058,3 +1022,47 @@ as well as other cache-based side-channel attacks on SGX and in general
 
 % This is where you can put a summary of Phoenix's design/implementation/eval
 
+
+
+% We present the design and implementation of Phoenix, the first truly ``keyless
+% CDN''.  Phoenix uses secure enclaves (in particular Intel SGX) to host web
+% content, store sensitive key material, apply web application firewalls, and
+% more on untrusted machines.  To support scalability and multi-tenancy, Phoenix
+% is built around a new architectural primitive which we call \emph{conclaves}:
+% containers of enclaves.  Conclaves make it straightforward to deploy
+% multi-process, scalable, legacy applications.
+% 
+% We also develop a filesystem to extend the enclave's security
+% guarantees to untrusted storage. In its strongest configuration,Phoenix
+% reduces the knowledge of the edge server to that of a traditional on-path HTTPS
+% adversary. We evaluate the performance of Phoenix with a series of micro- and
+% macro-benchmarks.
+
+% \parhead{Contributions}
+% %
+% We make the following contributions:
+% 
+% \begin{widelist}
+% 
+% \item We present the first truly ``keyless CDN,'' which we call Phoenix.
+% 	Phoenix performs all of the quintessential tasks of today's CDNs,
+% 	without requiring CDNs to gain access to sensitive key material,
+% 	and without having to change legacy web applications.
+% 
+% \item To realize our design, we introduce a new architectural primitive
+% 	called \emph{conclaves}, which creates a microkernel out of secure
+% 	enclaves.  Conclaves offer the abstraction of a ``container of
+% 	enclaves,'' thereby making it straightforward to deploy
+% 	multi-process, scalable, legacy applications within a dynamic
+% 	number of enclaves.
+% 
+% \item We present a detailed design and implementation of Phoenix, and
+% 	evaluate it on Intel SGX hardware. Our results indicate that
+% 	conclaves scale to support multi-tenant deployments.
+% 
+% \item Based on our results, we suggest improvements that could be made
+% 	to Linux and SGX to better support high-performance, multi-process
+% 	enclaved applications.
+% 
+% 
+% \end{widelist}
