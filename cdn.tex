@@ -4,10 +4,1050 @@
 \subsection{Overview}
 % describe the system and the core problem as it relates to this system
 
+Content Delivery Networks (CDNs) serve a large and increasing portion of
+today's web content.
+%
+Beyond caching, CDNs provide their customers with a variety of services,
+including protection against DDoS and targeted attacks.
+%
+%% from load balancing, to content compression and
+%% transcoding, to web application firewalls. 
+%
+As the web shifts from HTTP to HTTPS, CDNs continue to provide such services by
+also assuming control of their customers' private keys, thereby breaking a
+fundamental security principle: private keys must only be known by their owner.
+
+We present the design and implementation of Phoenix, the first truly ``keyless
+CDN''.  Phoenix uses secure enclaves (in particular Intel SGX) to host web
+content, store sensitive key material, apply web application firewalls, and
+more on untrusted machines.  To support scalability and multi-tenancy, Phoenix
+is built around a new architectural primitive which we call \emph{conclaves}:
+containers of enclaves.  Conclaves make it straightforward to deploy
+multi-process, scalable, legacy applications.
+%% 
+%
+%% a reverse caching proxy
+%% that uses Intel SGX to preserve the confidentiality of the content provider's
+%% private TLS key while stored on the edge server. \projname runs the NGINX
+%% webserver in an Intel SGX enclave, while also enabling key CDN services, such
+%% as firewalling, local and remote caching, and scriptable configuration. In
+%% order to ensure the integrity and, optionally, confidentiality, of any cached
+%% content, 
+%% 
+We also develop a filesystem to extend the enclave's security
+guarantees to untrusted storage. In its strongest configuration,Phoenix
+reduces the knowledge of the edge server to that of a traditional on-path HTTPS
+adversary. We evaluate the performance of Phoenix with a series of micro- and
+macro-benchmarks.
+
+%% /////////////////////////////////////////////////////////
+% INTRODUCTION
+%% /////////////////////////////////////////////////////////
+
+Content delivery networks (CDNs), like Akamai~\cite{akamai} and
+Cloudflare~\cite{cloudflare}, play a critical role in making today's web fast,
+resilient, and secure.
+%
+CDNs deploy servers around the world, on which they host their customers'
+websites.
+%
+Because the web's performance is largely determined by
+latency~\cite{why-internet-slow}, many websites rely on the fact that CDNs have
+proximal servers to nearly all users on the web to ensure low-distance and
+therefore low-latency connections.
+
+
+While CDNs have grown more popular, so too has the movement towards an
+HTTPS-everywhere web.
+%
+The majority of all websites are offered via HTTPS, and with the advent of free
+HTTPS certificate issuance~\cite{lets-encrypt}, this number has grown
+increasingly quickly~\cite{felt-2017-https}.
+
+
+Unfortunately, HTTPS and CDNs are, in some sense, pathologically incompatible.
+%
+To accept TLS connections, CDN servers store their customers' secret keys---in
+many cases, the CDN actually generates the keys on behalf of their
+customers~\cite{key-sharing,when-https-meets-cdn}.
+%
+As a result, CDNs are imbued with a \emph{huge} amount of trust: they could
+impersonate, eavesdrop on, or tamper with all of their customers, including
+virtually all of the world's major banks, online shops, and many government
+sites.
+
+
+The messy relationship between HTTPS and CDNs is made all the more challenging
+by the fact that CDNs today do far more than merely \emph{host} the bulk of the
+web's content.
+%
+They also use web application firewalls (WAFs) to analyze clients' requests for
+evidence of targeted attacks like SQL injection or cross-site scripting, and
+filter them before uploading to their customers~\cite{securing-cdns}.
+%
+CDN customers benefit from this service because it scrubs attack traffic far
+from their own networks.
+%
+And yet, running a WAF on a CDN requires the CDN to have access to the
+website's unencrypted traffic.
+
+
+There have been recent advances to address aspects of this problem,
+most notably Cloudflare's Keyless SSL~\cite{keyless-ssl}, which is a
+protocol that allows CDN customers to maintain sole ownership of their
+private keys.
+%
+However, even with Keyless SSL, the CDN learns all session keys,
+yielding little additional assurance against eavesdropping or
+impersonation.
+%
+The ideal solution would allow for all requisite processing and
+functionality to be performed on encrypted data, so that the CDN
+operator is neither responsible for holding the keys nor able to see
+any of the data through it.
+%
+However, even the state of the art in this
+area~\cite{naylor2015multi,naylor2017and,leematls,desmoulins2018pattern,
+sherry2015blindbox, canard2017blindids,lan2016embark} is much too
+inefficient to be utilized at the scale and performance that would be
+expected of a CDN.
+
+
+
+
+In this paper, we introduce the design and implementation of
+\emph{Phoenix}, the first truly ``Keyless CDN''.
+%
+Phoenix uses trusted execution environments (TEEs, in particular Intel
+SGX enclaves) to perform all of the quintessential tasks of today's
+CDNs---hosting web servers, applying web application firewalls,
+performing certificate management, and more---all on untrusted
+machines.
+
+
+Critical to the performance of any CDN is the ability to support
+multiple concurrent web servers and multiple tenants (customers).
+%
+Unfortunately, no existing software infrastructures built off of SGX
+have been able to support multi-process, multi-tenant applications.
+%
+We introduce a new general-purpose architectural primitive we call
+\emph{conclaves}: containers of enclaves.
+%
+Conclaves facilitate the deployment, configuration, and dynamic
+scaling-up and -down of sophisticated legacy (unmodified) applications.
+
+
+\parhead{Contributions}
+%
+We make the following contributions:
+
+\begin{widelist}
+
+\item We present the first truly ``keyless CDN,'' which we call Phoenix.
+	Phoenix performs all of the quintessential tasks of today's CDNs,
+	without requiring CDNs to gain access to sensitive key material,
+	and without having to change legacy web applications.
+
+\item To realize our design, we introduce a new architectural primitive
+	called \emph{conclaves}, which creates a microkernel out of secure
+	enclaves.  Conclaves offer the abstraction of a ``container of
+	enclaves,'' thereby making it straightforward to deploy
+	multi-process, scalable, legacy applications within a dynamic
+	number of enclaves.
+
+\item We present a detailed design and implementation of Phoenix, and
+	evaluate it on Intel SGX hardware. Our results indicate that
+	conclaves scale to support multi-tenant deployments.
+
+\item Based on our results, we suggest improvements that could be made
+	to Linux and SGX to better support high-performance, multi-process
+	enclaved applications.
+
+
+\end{widelist}
+
+\parhead{Roadmap}
+%
+The rest of this paper is organized as follows.
+%
+We describe the essential features of today's CDNs and distill a set of
+goals and threat models in \S\ref{sec:background}.
+%
+We review related work in \S\ref{sec:prior}.
+%
+We present the design of conclaves and of Phoenix in \S\ref{sec:design},
+and their implementation in \S\ref{sec:implementation}.
+%
+We present our evaluation in \S\ref{sec:eval} and conclude in
+\S\ref{sec:conclusion}.
+
+
+
+%% /////////////////////////////////////////////////////////
+% PROBLEMS AND GOALS
+%% /////////////////////////////////////////////////////////
+
+In this section, we distill down the fundamental features of today's
+CDNs, discuss the inherent security challenges, and formulate the goals
+and threat models that guide the rest of this paper.
+
+CDNs are third-party services that host their customers' websites (and
+other data).
+%
+Virtually all of the most popular websites (and a very long tail of
+unpopular websites) use one or more CDNs to help reliably host their
+content~\cite{key-sharing}.
+%
+Historically, CDNs have been thought of as a massive web
+cache~\cite{cdn-on-demand}, but today's CDNs play a critical role in
+achieving the performance and security that the web relies
+on~\cite{securing-cdns}.
+
+
+We identify four key roles that fundamentally define today's CDNs, and
+the core enabling technologies that CDNs use to achieve them:
+
+\parhead{Low latency to clients:} % {{{
+%
+The primary driving feature of CDNs is their ability to offer low
+page-load times for clients visiting their customers' websites.
+	
+\medskip\noindent
+%
+\emph{How they achieve this:}
+%
+CDNs achieve low latencies via a massive, global network of
+\emph{multi-tenant edge servers}.
+%
+Edge servers act primarily as reverse proxy web servers for the CDN's
+customers: to handle client requests, edge servers retrieve content
+from the customers' \emph{origin servers}, and cache it so they can
+deliver it locally.
+%
+CDNs direct client requests to the edge servers in a way that balances
+load across the servers, and that minimizes client latency---often by
+locating the ``closest'' server to the client.
+%
+There are many sophisticated means of routing clients to nearby
+servers, involving IP geolocation, IP anycast, and DNS load
+balancing---but these specific mechanisms are outside the scope of this
+paper.
+
+
+Edge-network services like CDNs therefore derive much of their utility
+from the fact that they have servers close to most clients.
+%
+To this end, CDNs deploy their own data centers, and deploy servers
+within other organizations' networks, such as college campuses, ISPs,
+or companies.
+%
+Indeed, today's CDNs have so many points of presence (PoPs) that they
+often are within the \emph{same} network as the clients visiting their
+sites.
+%
+To support such proximity without an inordinate number of machines,
+CDNs rely on the ability to host multiple tenants (customers) on
+their web servers at a time.
+
+% }}}
+
+\parhead{Manage customers' keys:} % {{{
+%
+As the web moves towards
+HTTPS-everywhere~\cite{felt-2017-https}, customers increasingly
+rely on CDNs to store their HTTPS certificates and the corresponding
+secret keys, so that they can accept TLS connections while maintaining
+low latency to clients.
+
+
+\medskip\noindent
+%
+\emph{How they achieve this:}
+%
+Previous studies~\cite{key-sharing,when-https-meets-cdn} have shown
+that CDNs manage their customers' keys in a variety of ways: sometimes
+by having their customers upload their secret keys, but typically by
+simply generating keys and obtaining certificates on their customers'
+behalf.
+%
+Many CDNs combine multiple customers onto single ``cruiseliner
+certificates'' under the same key pair---these customers are not allowed
+to access their own private keys, as that would allow them to
+impersonate any other customer's website on the same cruiseliner
+certificate~\cite{key-sharing}.
+%
+A recent protocol, Keyless SSL~\cite{keyless-ssl}, has been proposed
+to address this; we describe this in more detail in \S\ref{sec:prior}.
+
+% }}}
+
+\parhead{Absorb DDoS traffic:} % {{{
+%
+CDNs protect their customers by filtering DDoS traffic, keeping it from
+reaching their customers' networks.
+
+\medskip\noindent
+%
+\emph{How they achieve this:}
+%
+CDNs leverage economies of scale to obtain an incredible amount of
+bandwidth and computing resources.  Their customers' networks block
+most inbound traffic, except traffic from the CDN.
+%
+Thus, attackers must overcome these huge resources in order to impact a
+customer's website.
+
+% }}}
+
+\parhead{Filter targeted attacks:} % {{{
+%
+An often overlooked but critical feature~\cite{securing-cdns} of
+today's CDNs is the ability to filter out (non-DDoS) attack traffic,
+such as SQL injection and cross-site scripting attacks.
+
+
+\medskip\noindent
+%
+\emph{How they achieve this:}
+%
+Unlike with DDoS traffic, the primary challenge behind protecting
+against targeted attacks is \emph{detecting} them.
+%
+CDNs achieve this by running \emph{web-application firewalls (WAFs)},
+such as ModSecurity~\cite{modsecurity}.
+%
+WAFs analyze the plaintext HTTP messages, and compare the messages against
+a set of rules (often expressed as regular expressions~\cite{owasp})
+that indicate an attack.
+%
+Edge servers only permit benign data to pass through to the customer's
+origin server.
+
+
+% }}}
+
+% Itemized list version of the above {{{
+
+%% \begin{widelist}
+%% %
+%% \item \textbf{Offer low latency to clients:} The primary driving
+	%% feature of CDNs is their ability to offer low page-load times for
+	%% clients visiting their customers' websites.  \emph{How they achieve
+	%% this:} CDNs achieve this through massive \emph{geo-replication} of
+	%% their web servers---indeed, today's CDNs have so many points of
+	%% presence
+	%% (PoPs) that they often are within the \emph{same} network as the
+	%% clients visiting their sites (e.g., within college campuses, in
+	%% popular ISPs, and so on)---and through the ability to host
+	%% \emph{multiple tenants} on their web servers at any time.
+%% %
+%% \item \textbf{Absorb DDoS traffic:} By leveraging economies of scale,
+	%% today's CDNs have an incredible amount of bandwidth and computing
+	%% resources.  By blocking all but the CDNs' traffic to their
+	%% customers' networks, attackers must overcome these huge resources
+	%% in order to impact a customer's website.
+%% %
+%% \item \textbf{Filter targeted attacks:} An often overlooked but
+	%% critical feature~\cite{securing-cdns} of today's CDNs is the
+	%% ability to filter out (non-DDoS) attack traffic, such as SQL
+	%% injection and cross-site scripting attacks.  CDNs achieve this by
+	%% running \emph{web-application firewalls (WAFs)}, such as
+	%% ModSecurity~\cite{modsecurity}, on (unencrypted) HTTP traffic from
+	%% the client before passing it along to the origin server.
+%% %
+%% \end{widelist}
+%% 
+%% 
+%% A CDN consists of three fundamental components: (1)~a global network of reverse
+%% proxy HTTP(S) servers (sometimes called ``nodes", ``surrogate servers" or
+%% ``edge servers") that cache and serve the content of many customers
+%% (also called ``Content Providers", ``origin servers", ``publishers", or simply
+ %% ``websites"), (2)~a mechanism for redirecting client HTTP(S) requests for the
+%% customer's website to the edge servers, and (3)~policy, specified by either CDN
+%% operator or customer, for managing the content served and configurations of (1)
+%% and (2).
+%% 
+%% 
+%% The primary purpose of CDNs is to reduce the page load times for the customer's
+%% website by directing clients to the ``closest" edge server, and, by virtue of
+%% caching, also reduce the bandwidth costs incurred by the customer's origin
+%% server.  
+%% %
+%% Distributing client requests across multiple edge servers, combined with
+%% mechanisms to hide the existence of the origin server, have the added benefit
+%% of providing DDoS protection for the website.  
+%% %
+%% To further defend the website, CDNs often deploy application firewalls on the
+%% edge server to stymie web-based attacks, such as XSS and SQL injections.
+
+% }}}
+
+% Old text I tried to mostly incorporate above {{{
+
+% TODO: need to mention CNAMEs which are used a bit, and url-rewriting,
+% which is used less frequently.
+
+%% CDNs typically manage the DNS zone of their customer. 
+%% %
+%% Specifically, the CDN operator runs the authoritative domain server for the
+%% customer's zone; requests for domains within that zone resolve to an IP address
+%% of one of the CDN's edge servers.  
+%% %
+%% While this setup, by itself, is enough to direct client requests to \emph{an}
+%% edge server, CDNs use one of two methods to direct the client to the
+%% \emph{best} (that is, lowest latency, or closest) edge server.  
+%% %
+%% In the first method, called DNS request routing, the authoritative domain server
+%% returns an IP address that is closest to the recursive resolver issuing the
+%% query.  
+%% %
+%% In the second method, the nameserver returns the same IP address regardless of
+%% the host making the request; edge servers share an IP address, and the CDN uses
+%% BGP anycast routing to route the client to the nearest edge server.
+ 
+ 
+%% CDNs offer a number of features for customers to further specify what content is
+%% cached and how the edge servers handle the content, as well as for tailoring
+%% the request routing. 
+%% %
+%% For instance, a customer may specify to cache only JavaScript and images, to
+%% minify the JavaScript and transcode the images for improved page load times, and
+%% that, due to local regulations, requests from some set of clients must be
+%% serviced by some set of edge servers. 
+%% %
+%% As noted by prior work, in order for CDNs to serve a customer's HTTPS traffic,
+%% the customer shares their private key with the CDN operator, or, as is often
+%% the case, contracts the CDN to manage the key and certificate (to include
+%% certificate requests, renewals, and revocations).
+
+% }}}
+
+% }}}
+
+\subsection{Security Implications of CDNs} % {{{
+
+Simultaneously fulfilling these four roles---low latency, key
+management, absorbing large attacks, and blocking small
+attacks---inherently requires processing client requests on
+edge servers.
+%
+In the presence of HTTPS, however, this form of processing requires
+edge servers to have at least each TLS connection's session key, if not
+also each customer's private key.
+
+It is therefore little surprise that CDNs have amassed the vast
+majority of private keys on the
+web~\cite{key-sharing,when-https-meets-cdn}.
+%
+This has significant implications on the trust model of the PKI and the
+web writ large: today's CDNs could arbitrarily impersonate any of their
+customers---and recall that virtually all of the most popular websites
+use one or more CDNs~\cite{key-sharing}.
+
+Even if one were to assume a trustworthy CDN, the need to store
+sensitive key materials on edge servers introduces significant
+challenges.
+%
+CDNs have historically relied on a combination of their own physical
+deployments and deployment within third-party networks, such as college
+campuses.
+%
+To protect their customers' keys, some CDNs have refused to deploy
+HTTPS content anywhere but at the data centers they have full physical
+control over~\cite{securing-cdns}.
+%
+However, as the web moves towards HTTPS-everywhere, this means that
+such CDNs can no longer make as much use out of third-party networks.
+
+
+In short, without additional protections for private and session keys
+on edge servers, the move towards HTTPS-everywhere represents an
+\emph{existential threat} to edge-network services.
+
+% }}}
+
+\subsection{Our Goals} % {{{
+\label{sec:goals}
+
+At a high level, our goal is to maintain all of the core properties of
+a CDN---low latency, key management, and additional resilience to DDoS
+and targeted attacks---without having to expose customers' keys or
+client's sensitive information, and without having to require massive
+code changes from their customers.
+%
+We distill our overarching goal down to five specifics:
+
+\begin{enumerate}
+	\item \textbf{Protect private keys:} Support HTTPS, but without
+		exposing the private keys corresponding to the certificate's
+		public key to any edge server.
+	\item \textbf{Protect session keys:} Once a connection is
+		established, do not expose the ephemeral session keys (nor the
+		sensitive material for session resumption) to any edge server.
+	\item \textbf{Secure web-application firewalls:} Support
+		edge-server-side WAFs, but without leaking plaintext messages
+		to the server.
+	\item \textbf{Support multi-tenancy:} Support the ability to host
+		multiple customers on a single machine (or even the same web
+		server process), but with strong isolation between them.
+	\item \textbf{Support legacy customer applications:} Support all of
+		the same web architectures of today, with minimal modifications
+		to or impact on customer code.
+\end{enumerate}
+
+These goals represent a departure from today's CDNs, which
+currently store all of their customers' keys (at least the session
+keys), and operate on the plaintext of the client's data.
+%
+Achieving these goals stands to improve the security of websites, the
+privacy of users, and also the flexibility in how edge-network services
+can be deployed.
+
+
+
+
+%% Our goal is to provide the mechanisms for the customer and CDN operator to
+%% mutually manage the lifecycle of the website's deployment on the CDN in such a
+%% way that the CDN continues to be responsible for infrastructure and service
+%% replication, and so as to accommodate the security postures of different
+%% customers.
+%% %
+%% To that end, we outline the following system goals:
+
+
+% }}}
+
+\subsection{Threat Models} % {{{
+
+An edge server is by definition a man-in-the-middle between the client
+and the origin server.
+%
+Given such a privileged position, there is a wide range of potential
+threats.
+%
+We define two threat models, each considering the perspective of who
+owns and operates the physical edge server.
+
+\parhead{Honest but curious}
+%
+In the honest but curious model, the entity hosting the web server runs
+the software and protocols as specified, but tries to infer customer
+keys, client data, or cookies by observing traffic to and from the
+machine, and by inspecting any information leaked to the host
+operating system.
+%
+This model applies when, for instance, the customer considers the CDN
+trustworthy and the CDN hosts its own hardware, but the customer is
+concerned about a rogue employee or administrator.
+%
+Additionally, CDNs may adopt this threat model when hosting their own
+hardware so as to limit the exposure of their customers' data in the
+event of a software bug in the untrusted OS.
+%
+Our goal would be to reduce an honest-but-curious attacker to have no
+more information than any on-path attacker (which HTTPS protects
+against).
+
+\parhead{Byzantine faulty behavior}
+%
+In this more extreme threat model, the entity hosting the hardware can
+deviate arbitrarily from the protocol, alter any software running in an
+untrusted environment on that hardware, and passively monitor traffic,
+and actively interact with the web servers.
+%
+Nonetheless, we assume attackers cannot violate basic assumptions of
+cryptography or trusted hardware, which we review next.
+%
+A website may wish to adopt this model for CDNs whom they do not trust.
+%
+Likewise, CDNs may assume this threat model when using edge-network
+servers that they do not personally host or have physical control
+over~\cite{securing-cdns}.
+
+
+%% A CDN is a perfect man-in-the-middle between the client and the origin server.
+%% %
+%% Given such a privileged position, the range of possible malicious CDN behavior 
+%% extends from the ``honest but curious" threat model, in which the CDN
+%% faithfully serves the customer's content but logs metadata about each request,
+%% to a downright ``Byzantine" threat, in which the CDN willingly breaks protocol
+%% and modifies content. \clg{Is Byzantine the right word here?  I'm used to seeing that more in a BFT kind of way with consensus.  But maybe that's just the blockchain community misappropriating the term.}
+%% %
+%% 
+%% The ``honest but curious" threat model implies infringement of the customer's
+%% and client's privacy.  Under such a model, the CDN may track users across
+%% websites managed by the CDN, aggregating data about each piece of content a
+%% client requests from each website.
+%% %
+%% From a different perspective, the CDN ``tracks" the customer: the CDN knows
+%% the complete enumeration of the customer's DNS zone and each piece of content
+%% the customer produces.
+%% %
+%% Even if the CDN does not sell such data (e..g, client browsing behaviour to
+%% advertisers) or otherwise monitor client and customer behavior, the CDN
+%% is in a position where they may be compelled by law enforcement to effectively
+%% engage in such an action.
+%% 
+%% 
+%% The ``Byzantine" model of the CDN implies security infringements --
+%% breaches in authentication and integrity.  A CDN acting in a Byzantine manner
+%% can impersonate the website, modify web content, and lie to the customer about
+%% billing statistics.
+%% %
+%% Moreover, since the CDN has access to the cookies and login credentials of each
+%% client, the CDN can impersonate the client with respect to each website.
+%% %
+%% Even if the CDN is not Byzantine by themselves, they are subjected to such
+%% behavior from different parties: insider threats, attackers, or simply
+%% organizations from which the CDN rents edge servers and data centers.
+%% 
+%% 
+%% There are threats, of course, between these two extreme models.  For
+%% instance, a CDN is capable of performing a downgrade attack (say, changing a
+%% clients connection from HTTPS to HTTP) as part of collusion with some
+%% third party.
+
+% }}}
 
 \subsection{Related Work}
 % describe any related work that has tried to solve this problem and the
 % tradeoffs of those solutions
+
+%% /////////////////////////////////////////////////////////
+% PRIOR WORK
+%% /////////////////////////////////////////////////////////
+
+Before describing our solution, we review prior work in terms of how they have
+achieved the goals outlined in \S\ref{sec:goals}.  There have been a variety of
+approaches that achieve a subset of our goals, but to the best of our
+knowledge, we are the first to achieve them all.  See Table \ref{tbl:prior} for
+a comparison.
+
+\subsubsection{TEE-less Solutions}
+
+%\subsection{HTTP Solutions}
+%\paragraph{HTTP Solutions}
+\parhead{HTTP Solutions}
+% TODO: others (NoCDN, SINE, OCDN, S-HTTP, Data Staging on Untrusted Surrogates)
+Both experimental and standardized solutions exist for guaranteeing the
+provenance and integrity of web assets served by a proxy.
+We touch on these briefly.
+%
+
+CDN-on-Demand~\cite{cdn-on-demand} and Stickler~\cite{stickler}, as well as the
+W3C Subresource Integrity (SRI) and Content Security Policy (CSP) features,
+allow the TLS private key to remain on the origin server and off the proxies.
+However, they do so at a tradeoff: either the origin services all HTTPS traffic
+(defeating the core purpose of a CDN), or less content is delivered over HTTPS
+(and, instead, signed in cleartext), infringing upon client and origin privacy.
+%
+Finally, these solutions fail to incorporate other CDN services, such as media
+transcoding and application firewalls.
+
+%\subsection{SSL Solutions}
+%\paragraph{SSL Solutions}
+\parhead{SSL Solutions}
+% TODO: WASP
+SSL Splitting~\cite{ssl-splitting} guarantees the freshness and integrity of
+data served by a web proxy without requiring changes to the client.
+%
+%The key insight of SSL splitting is that a stream of SSL records is separable into
+%a data component and an authenticator component; each component uses a
+%different key (encryption key and MAC key, respectively) derived independently
+%from the master secret.
+%
+%In SSL Splitting, the origin server sends the SSL record authenticators, and
+%the proxy merges them with a stream of message payloads (data records)
+%retrieved from the proxy's cache; the merged stream is indistinguishable
+%from a normal SSL connection between the client and the origin.
+%
+%
+%Since the origin participates in every TLS session, SSL-splitting reduces only
+%the bandwidth-load, and not the CPU load, of the origin server, and does not
+%improve the redundancy of the site, as the origin must always be available
+%to authenticate data.
+%
+%SSL splitting lacks end-to-end confidentiality; while the origin server retains
+%the MAC key established during the SSL handshake, the origin must expose the session
+%encryption key to the proxy.
+%
+SSL splitting does, however, require a new protocol between origin and proxy, as
+well as a change at the proxy from file-level caching to SSL record-level
+caching.
+
+
+Rather than split TLS at the record level, Cloudflare's
+Keyless SSL~\cite{keyless-ssl} takes advantage of the fact that TLS only uses
+the website's private key in a single step of the TLS handshake.
+%
+%Cloudflare thus allows the handshake to be split geographically, with most of the
+%handshake happening at the edge server, and the private key operations proxied 
+%to the remote server.
+%
+%If the customer operates the remote server on their own premises, then 
+%the customer has exclusive access to the private key.
+%
+%The implementation requires changes to both OpenSSL and NGINX to proxy the
+%private key operation in a non-blocking fashion.
+%
+Like SSL Splitting, Keyless SSL keeps the master private key off of, and unknown
+to, the proxy, but unlike SSL Splitting, Keyless SSL does not provide for
+content provider endorsement of the content the proxy serves.  Also,
+while it protects the long private term keys, Keyless SSL provides no protection of the session keys from the CDN provider.
+
+
+A final class of proposed solutions modifies the TLS protocol in various ways
+to allow for the interception of traffic by middleboxes
+\cite{naylor2015multi,naylor2017and,leematls}.  This is contrary to our desire
+to support legacy applications.  These solutions also seek largely to protect
+private and/or session keys and do not discuss how they would be integrated
+with tools such as WAFs.
+
+%mcTLS (SIGCOMM 2015)
+%This one doesnt seem to help us much
+%Controls selective access to data/certain parts of the connection
+%All computation/inspection would be done on plaintext
+%Changes both endpoints?
+%Concept of context keys
+%
+%mbTLS
+%Looks like you need to tweak client slightly?? (but otherwise no endpoint changes)
+%Proxies all connections through SGX
+%Per hop session keys, stored in SGX
+%Keys protected from middleboxes
+%Each endpoint provisions its own middleboxes
+%Would have to run all inspection in SGX on plaintext
+%Claims with large buffers ~7Gbps throughput
+%Smaller ones ~2Gbps
+
+%\subsection{PKI Solutions}
+%\paragraph{PKI Solutions}
+\parhead{PKI Solutions}
+Liang et al.~\cite{when-https-meets-cdn} approaches the issue of composing
+HTTPS with CDNs as a problem of specifying delegation.  
+%
+%They note that CDNs service HTTPS traffic to the customer's website by
+%either having a copy of the customer's private TLS key, or adding the customer
+%as a Subject-Alternate-Name (SAN) to one of the CDN's certificates.  
+%
+%In either case, the customer cannot independently and efficiently remove such
+%delegation without the cooperation of the CA and CDN, as such removal requires
+%certificate revocation and reissuance.
+They propose a DANE-based~\cite{DANE} solution whereby a customer adds both
+her certificate and the CDNs certificate as TLSA resource records in the
+customer's DNS zone file.  This requires a change in client certificate validation, which breaks legacy support.
+%
+%The authenticity and integrity of these records is guaranteed by DNSSEC.
+%
+%The proposal requires the client to query for the TLSA records as part of
+%resolving the domain name, as well as a change in certificate validation (the
+%client verifies that the certificate the CDN presents during the HTTP
+%request matches one of the TLSA records).
+Also, while the proposal elegantly removes the need to share keys, as well as the
+broad use of SANs, its reduction of the man-in-the-middle threats of
+CDNs is small: the CDN does not have physical access to the customer's key,
+but can still alter content, and otherwise impersonate the customer, in
+arbitrary ways.  
+%
+%The proposal is also completely ineffectual if the CDN operates the
+%customer's DNS server.
+
+\subsubsection{Cryptographic Solutions}
+%\paragraph{Cryptographic Solutions}
+%\parhead{Cryptographic Solutions}
+% TODO: BlindBox, homomorphic encryption
+% \cite{blindbox}, \cite{homomorphic}
+
+One seemingly straightforward approach to solving this problem would seem to be
+fully homomorphic encryption (FHE) or functional encryption
+\cite{gentry2009fully, gentry2010computing, garg2016candidate}.  FHE allows one
+to perform arbitrary computations on \textit{encrypted} data, without knowing
+any of the keys.  However, even current state-of-the-art homomorphic encryption
+is much too slow for the performance that is required of a CDN and additionally
+would violate our goal to support legacy applications.
+
+There have been various solutions to balance the desire to allow for
+functionality like deep packet inspection (DPI) while still maintaining the
+privacy of data using tailored searchable encryption schemes to implement DPI
+\cite{desmoulins2018pattern, sherry2015blindbox, canard2017blindids}.  BlindBox
+\cite{sherry2015blindbox} seeks to leverage searchable encryption as well but
+requires endpoint changes and is not efficient enough for our purposes,
+especially for large rulesets.  In a similar vein, BlindIDS
+\cite{canard2017blindids} leverages decryptable searchable encryption to
+address some of the limitations of BlindBox.
+%While the performance is greatly improved, it is still not practical for our
+%desired application.  In general, all of these approaches focus largely on DPI
+%only as well and do not consider the wider functionalities required of a CDN
+%like we do in our work.
+Embark \cite{lan2016embark} extends BlindBox to allow for a greater range of
+functionalities, however, it still suffers from some performance overhead.  In
+general, we note that all of these approaches require changes of some sort to
+the endpoint(s) and do not achieve the rich and varied CDN features necessary.
+%However, they achieve neither the rich and varied CDN features that we are
+%able to nor similar performance.  In addition, we note that they all would
+%require changes of some sort to the endpoint(s).  
+
+%BlindBox (SIGCOMM 2015)
+%Requires endpoint changes
+%Slow connection setup for many rules
+%Memory space??
+%Running regex requires selective decrypt and can only be done on plaintext ? probable decryption
+%Allows us to do keyword matching over encrypted data
+%Per connection setup/rule encryption/circuit generation
+%Symmetric crypto [some word I cant read, need to figure that out]
+%
+%SGX-Box (APNet 2017)
+%Run all filtering/inspection in SGX
+%Provision session keys to enclave via out of band channel
+%Is it efficient to run everything in SGX???
+%5k patterns = ~3.5Gbps throughput
+%
+%BlindIDS (AsiaCCS 2017)
+%Encrypt decryption pattern/rules only once overall
+%Decryptable searchable encryption
+%Preserves privacy of detection rules (do we care about this?)
+%Shifts much of the overhead to detection phase on SP ? performance doesnt seem that great
+%Good for post-intrusion detection
+%Load time better than BlindBox but still fairly slow.
+%Pairing based
+% only honest but curious middleboxes
+%
+%Embark (NSDI 2016)
+%Outsourcing middleboxes to clouds
+%Improvements come from architecture/setting changes? (which doesnt really work for us)
+%
+%Pattern Matching on Encrypted Data (ePrint 2017)
+%Pairing based
+%No actual performance numbers?
+%Large public keys (linear in size of plaintext) and large ciphertexts (same)
+%Theory result???
+%Can do regex+keyword search
+%Compares itself to BlindBox but doesnt give any actual implementation or concrete performance numbers
+%
+
+\subsubsection{Intel SGX (and Other TEEs)}
+%\clg{I just dumped a big block of text in here, will edit}
+Trusted execution environments (TEE) provide hardware protections for running
+small trusted portions of code with guarantees of confidentiality and
+integrity.  Applications can be guaranteed that code executed within the
+environment was run correctly and that any secrets generated during execution
+will remain safely within it as well.
+
+There are a wide range of trusted execution environments available today, with
+varying functionalities.  We choose to focus on Intel's new Software Guard
+Extensions (SGX) environment for our work, though we note that any TEE with
+similar functionality (such as ARM TrustZone \cite{trustzone}) would also be
+usable.
+
+%The functionality that we explain in "SGX Overview": isolation, trusted code execution, calls into/out of the enclave, attestation, cryptographic "sealing" of the data, and trusted time/monotonic counters.
+
+%\subsubsection{SGX Overview}
+%\paragraph{SGX Overview}
+\parhead{SGX Overview}
+% TODO: brief overview of intel SGX.
+%\myparagraph{Intel's SGX} Intel's Software Guard Extensions (SGX) allow for
+%the creation of \textit{enclaves}, a trusted execution environment\cite{sgx,
+%mckeen2013innovative}.   These enclaves can be statically disassembled, but
+%are opaque while running.  Enclaves can also \textit{attest} to their current
+%state, proving correct execution\cite{sgx_provisioning, anati2013innovative}.
+%SGX also provides such features as trusted time, monotonic counters, etc.
+%\cite{sgx_sdk_guide}.
+%SGX can cryptographically \textit{seal} data to be used across multiple
+%invocations -- corresponding to the encrypted state used in our protocol.
+%Data can either be sealed to the owner of the enclave or just to the specific
+%enclave instance \cite{anati2013innovative, sgx_sealing}.  Production enclaves
+%can only be produced by obtaining a production license and signing key from
+%Intel, which whitelists licensee's key \cite{sgx_production,
+%sgx_production_faq}.
+Intel's Software Guard Extensions (SGX) provide a new mechanism for trusted
+hardware and software as an extension to the x86 instruction set \cite{sgx,
+mckeen2013innovative}.  A program called an \textit{enclave} runs at high
+privilege in isolation on the processor in order to provide trusted code
+execution, while an untrusted application can make calls into the enclave.
+While these enclaves can be statically disassembled (so the code running in the
+enclave is not private), once an enclave is running its internal state is
+opaque to any observer as are any secrets generated.  The 
+
+Enclave Page Cache (EPC) contains the enclave's protected code and data and is
+a special area in memory that is encrypted using the Intel Memory Encryption
+Engine (MEE) \cite{sgx3}.  EPC pages are only decrypted when inside the
+processor.  Code and data from multiple enclaves can reside within the EPC, but
+each EPC page is owned by only a single enclave and this owner is the only one
+allowed to access the page.
+
+Enclaves must be measured and signed by their creator and cannot run without
+this signature, and the enclave state is checked against this measurement
+before running.  An enclave can also cryptographically \textit{attest} to its
+current state, in order to prove that it correctly executed code
+\cite{sgx_provisioning, anati2013innovative}.  Another feature is the ability
+to cryptographically \textit{seal} data to be used across multiple invocations
+of an enclave \cite{anati2013innovative, sgx_sealing}.  SGX also provides such
+features as trusted time and monotonic counters
+\cite{sgx_sdk_guide,sgx_trusted_time}.  However, we note that an enclave
+currently has no access to networking functionality itself, so it must rely on
+the untrusted application for all network interactions.  Enclaves are also
+prohibited from making system calls, so these must be proxied through the
+untrusted operating system as well.
+
+%An important feature of SGX is its ability to cryptographically \textit{seal}
+%data to be used across multiple invocations of an enclave.  Data can either be
+%sealed to the owner/creator of the enclave so that it is readable by other
+%enclaves from the same vendor or just to the specific enclave itself
+%\cite{anati2013innovative, sgx_sealing}. A specific seal key is derived from
+%the master seal key that is fused onto the chip in
+%manufacturing.\christina{Check on this to make sure I have it all right}
+
+%Data within the enclave is not accessible by any external application unless
+%explicitly written out.  Enclaves must be measured and signed by their creator
+%and cannot run without this signature.  Enclaves can run in two main modes:
+%DEBUG and RELEASE.  RELEASE mode provides full production-quality hardware
+%protection for the enclave and keeps the enclave execution protected, while
+%DEBUG mode allows the enclave to be examined and debugged
+%\cite{sgx_production, sgx_enclave_modes}.  Production-quality enclaves can
+%only be produced by obtaining a production license and signing key from Intel,
+%which then places the licensee's key on a whitelist \cite{sgx_production,
+%sgx_production_faq}.
+
+
+
+%\subsubsection{Running Legacy Applications on SGX}
+%\paragraph{Running Legacy Applications on SGX}
+\parhead{Running Legacy Applications on SGX}
+% TODO: overview of Haven/SCONE/Graphene, and why insufficient 
+% for the task at hand.  Also mention Eleos and hotcalls in this
+% line % of work.
+% \cite{havnen, \cite{scone}, \cite{graphen}, \cite{eleos}, \cite{hotcalls}
+
+Haven \cite{baumann2015shielding}, SCONE \cite{199364}, Graphene
+\cite{graphene}, and Aurora \cite{liang2018aurora} all seek to provide a
+mechanism for achieving shielded execution of unmodified legacy applications.
+However, both Haven and SCONE only support running a single process (i.e., no
+forking).  Graphene, on the other hand, does support multiprocesses but in the
+multiprocess setting, the filesystem must be either read-only and
+integrity-checked or completely on the untrusted host. It also does not have
+trusted time, shared memory, or an encrypted filesystem.  Aurora takes a
+slightly different approach, but is still not well-suited to the multi-tenant
+case, in particular for isolation of the filesystems, memory, and time.
+
+In order to support TLS, TaLoS~\cite{talos} is a port of LibreSSL to SGX that
+terminates TLS connections in an enclave.  TaLoS is solely designed to handle
+TLS connections and protect keys though, so it does not address our other
+design goals.
+%
+%The project targets scenarios where a TLS application runs outside of an
+%enclave, but does not have access to the TLS master and session keys.
+%
+%To this end, TaLoS splits LibreSSL into an enclave portion that handles
+%all sensitive data and operations, and a non-enclave portion.
+%
+%TaLoS replicates (shadows) the sensitive portion with sanitized data to the
+%untrusted memory space; when the application accesses a shadowed object, the
+%access is proxied to the enclaved counterpart.
+
+%\clg{TODO: add SCONE/Haven/Graphene}
+
+%add to 3.5.2 to mention SCONES/Haven/Graphene
+%the salient features are that haven and scones can only run a single process (i.e., no forking).  Graphene is multiprocess, but the fs in such cases is either read-only and integrity checked, or completely on the untrsuted host.  Graphene aslo doesn't have trusted time, shared memory, or encrypted filesystem
+
+%also in 3.5.2, we need to mention "Aurora: Providing Trusted System Services for Enclaves On an Untrusted System", which takes a different approach to achieving the same kind of goals
+%(as haven, scones, etc.)
+%but I think the gist is that aurora installs it's own little operating system into System Management Mode, which is super-privileged and typically only for the BIOS's operation.
+%I think the difference is likely that that design doesn't quite address multiple users/customers; in particular, isolating the the filesystems, memory, time, etc. like we do;
+%it's also not clear to me that SMM has the same properties as the EPC
+%that is, the memory might be readable by someone with physical access
+%I'm not very familiar with SMM
+
+
+%\subsection{TEEs and Middleboxes}
+%\paragraph{TEEs and Middleboxes}
+\parhead{TEEs and Middleboxes}
+A recent series of works have explored securing middleboxes by using trusted execution environments, like SGX.
+
+One such set of systems tackles the problems of deep packet inspection (DPI)
+and intrusion detection (IDS) \cite{han2017sgx,
+DBLP:journals/corr/abs-1802-00508}.  These are complementary to our work, as
+CDNs do typically utilize this functionality, but much more limited than the
+generic CDN functionality achieved by Phoenix.
+
+Another class of work deals with deploying general network functions (NFs) on
+middleboxes using SGX.  SafeBricks \cite{poddar2018safebricks} works to enforce
+least privilege across NFs but cannot support any network functions that rely
+on operations prohibited within SGX, such as system calls and timestamps,
+unlike Phoenix.  ShieldBox \cite{trach2018shieldbox} also seeks to deploy NFs within a TEE and leverages Scone to allow for the handling of system calls.
+ENDBOX \cite{goltzsche2018endbox} is designed to allow for a distributed deployment of middlebox functions on client machines.  This is contrary to our goal of supporting legacy applications and orthogonal to our goal of building a more secure cloud-based CDN.
+LightBox \cite{DBLP:journals/corr/DuanYW17} allows for generic NF deployment but focuses on protecting metadata information for encrypted traffic.
+We observe that none of these systems handle the complete range of functionality required and note that many of these approaches are unable to handle the multi-tenant setting that we support.
+
+SPX \cite{bhardwaj2018spx} also works to deploy generic functions at edge nodes but at a protocol level.
+%but does this by providing a framework for securely extending protocols to handle secure edge computing needs.
+This provides a more generic set of supported communication protocols than our work but would not handle the other CDN system design constraints.
+
+Beekman \cite{beekman2016improving} seeks to build a way for Internet service providers to host secure services that protect the confidentiality and integrity of a user's data using SGX.  While our goals are similar in nature, the approaches differ in system-level that provides the services and isolation.  Beekman's secure service mechanism operates at the application level and requires application changes.  Our mechanism is at the OS-level and supports legacy applications.
+
+The most relevant works combining TEEs and middleboxes are Harpocrates \cite{ahmed2018harpocrates} and STYX \cite{wei2017styx}.
+Harpocrates builds basic CDN functionality using a TEE and alludes to performing Keyless SSL-like functionality using trusted hardware but does not provide any details.  In addition, Harpocrates does not seek to protect any derived key material and instead focuses solely on protecting the long term private key, as the authors feel that in order to do its job, a CDN must see all requests and responses in plaintext.
+STYX seeks to improve Keyless SSL by building a hierarchical key distribution scheme to protect keys provisioned on CDN nodes.  STYX deals only with the problem of improving Keyless SSL and protecting private and session keys.  It does not address secure WAFs or other CDN-type functionality.
+
+
+%ShieldBox: Secure Middleboxes using Shielded Execution \cite{trach2018shieldbox}\\
+%ENDBOX: Scalable Middlebox Functions Using Client-Side Trusted Execution \cite{goltzsche2018endbox}\\
+%Harpocrates: Giving Out Your Secrets and Keeping Them Too \cite{ahmed2018harpocrates}\\
+%SPX: Preserving End-to-End Security for Edge Computing \cite{bhardwaj2018spx}\\
+%LightBox: Full-stack Protected Stateful Middlebox at Lightning Speed \cite{DBLP:journals/corr/DuanYW17}\\
+%SafeBricks: Shielding Network Functions in the Cloud \cite{poddar2018safebricks}\\
+%Snort Intrusion Detection System with Intel Software Guard Extension (Intel SGX) \cite{DBLP:journals/corr/abs-1802-00508}
+%STYX: a trusted and accelerated hierarchical SSL key management and distribution system for cloud based CDN application \cite{wei2017styx}
+
+
+
+%\subsubsection{Side-Channel Attacks}
+%\paragraph{Side-Channel Attacks}
+\parhead{Side-Channel Attacks}
+% TODO: we need to acknowledge cache-timing attacks, as well
+% as speculative execution attacks, and mention how these are
+% implementation issues that will hopefully be addressed in future
+% secure hardware designs.
+%Recently, we have seen the rise of side-channel attacks against SGX, including
+%the speculative execution attack Foreshadow \cite{foreshadow,
+%weisse2018foreshadow}.  This attack allows for not only the extraction of the
+%entire SGX enclave's memory contents but also the attestation and sealing keys.
+%We note that this attack would break the security guarantees that we provide
+%with conclaves.
+Given that we propose the use of SGX in our work, we must address the recent rise
+ of side-channel attacks against SGX, including
+the speculative execution attack Foreshadow \cite{foreshadow,
+weisse2018foreshadow}.  This attack allows for not only the extraction of the
+entire SGX enclave's memory contents but also the attestation and sealing keys.
+We note that this attack would break the security guarantees that we provide
+with conclaves.
+
+However, Intel has often stated that SGX is explicitly designed to not deal
+with side-channel attacks in its current state and leaves handling this up to
+enclave developers \cite{sgx-sidechannel, sgx-developers}.  Regardless, Intel
+has released both microcode patches and recommendations for system level code
+that at the current time address Foreshadow and known related attacks
+\cite{sgx-patch, canella2018systematic, weisse2018foreshadow}.  There has also
+been a large amount of ongoing research to address both speculative execution
+as well as other cache-based side-channel attacks on SGX and in general
+\cite{yan2018invisispec, oleksenko2018varys, canella2018systematic, shih2017t}.
+
+%We also note that SGX is explicitly designed to not deal with side-channel
+%attacks in its current state and leaves handling this up to enclave developers
+%\cite{sgx-sidechannel, sgx-developers}.
+
+% cite Foreshadow, though don't make a big deal about it
+% note how this would/would not impact our system
+% Foreshadow enables an attacker to read the entire SGX enclave's memory contents.
+% Using Foreshadow we have successfully extracted the attestation keys, used by the Intel Quoting Enclave to vouch for the authenticity of enclaves. As a result, we were able to generate "valid" attestation quotes. Using these counterfeit quotes, successfully "proved" to a remote party that a "genuine" enclave was running while, in fact, the code was running outside of SGX, under our complete control.
+% As Foreshadow enables an attacker to extract SGX sealing keys, previously sealed data can be modified and re-sealed. With the extracted sealing key, an attacker can trivially calculate a valid Message Authentication Code (MAC), thus depriving the data owner from the ability to detect the modification.
+% microcode patches exist --> cite here: https://foreshadowattack.eu/foreshadow-NG.pdf
+% there has also been significant research effort on how to mitigate this currently/in the future: cite:
+% https://ieeexplore.ieee.org/abstract/document/8574559 --> InvisiSpec
+% https://arxiv.org/pdf/1811.05441.pdf --> has a giant list of proposed defenses
+% Intel CVE/defense page: https://software.intel.com/security-software-guidance/software-guidance/l1-terminal-fault
+
+% http://web.cse.ohio-state.edu/~zhang.834/papers/ccs17b.pdf
 
 
 \subsection{Prior or Proposed Work}
@@ -15,3 +1055,6 @@
 % work you propose to do.  For new work, re-emphasize the problem you are
 % trying to sovle, sketch a direction of the work, and describe how you will
 % evaluate if the work is successful.
+
+% This is where you can put a summary of Phoenix's design/implementation/eval
+
