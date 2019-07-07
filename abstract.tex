@@ -14,7 +14,7 @@ Some applications may be suitably re-designed to address these concerns by
 partitioning the application into trusted and untrusted components, wherein
 the content owner hosts the trusted component.  However, re-designs may be
 costly, and are only appropriate if they avoid shifting major hosting
-responsbilities back to the content owner.  In other cases, there is no
+responsibilities back to the content owner.  In other cases, there is no
 clear modification to the application that achieves the desired security
 goals without fundamentally changing the service.
 
@@ -40,7 +40,7 @@ of nodes on which these components may run.  I propose to
 design and implement solutions that span this space, so as to understand
 the advantages and disadvantages of each design choice.  I 
 explore interposing on the application's machine code, as by
-dynamic binary instrumention, as well as interposing on the operating system
+dynamic binary instrumentation, as well as interposing on the operating system
 services that the application uses, such as the dynamic loader, C runtime, and
 kernel subsystems.  For the latter, I consider cases where traditional
 operating system services, such as storage and network communications, are
