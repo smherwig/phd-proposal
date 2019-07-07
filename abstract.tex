@@ -1,30 +1,63 @@
 \begin{abstract}
-% 3 - 4 nice paragraphs:
-Web service deployment suffers from a tradeoff between availability and
-security: in order to increase availability, the service must shift the
-deployment to third-parties; however, by assisting in the deployment, the
-third-party gains sensitive information about that service.
+% Set the stage and problem
+Content owners shift the deployment of their services to untrusted third parties,
+such as cloud infrastructures, content delivery networks, or peer-to-peer
+networks, in order to reduce costs, increase availability, or gain
+additional protections inherent to these hosting environments.
+Unfortunately, such a shift poses a security tradeoff: third-parties that
+take part in the application's distribution potentially gain access to
+sensitive information about the application, its owner, or its users.
 
 
-I ask whether it is possible to reduce, if not eliminate, this tradeoff.
-% 
-I propose to design and implement systems that allow a web service to off-load
-deployment tasks onto untrusted third-parties, while maintaining the same
-security guarantees as if the service was deployed in-house.  
-% 
-To reduce adoption concerns, my approach is to extend existent systems for web
-service deployment, and preserve theses systems' division of
-responsibilities between the cooperating parties, rather than propose new
-architectures for the web.
-    
+% Assert insufficiency of existing solutions
+Some applications may be suitably re-designed to address these concerns by
+partitioning the application into trusted and untrusted components, wherein
+the content owner hosts the trusted component.  However, re-designs may be
+costly, and are only appropriate if they avoid shifting major hosting
+responsbilities back to the content owner.  In other cases, there is no
+clear modification to the application that achieves the desired security
+goals without fundamentally changing the service.
 
-I explore the problem from a cross-section of the available options for
-deploying a web service.
-%  
-In particular, I investigate deploying a web service (1) over a content
-delivery network, (2) as a Tor hidden service, and (3), on the
-decentralized web.  
-%    
-Each option entails a different operating and network environment, and reflects
-distinct service preferences with regards to privacy and persistence.
+
+% Broach approach
+Rather than modify the application directly, I propose instead to alter the
+execution environment in which the application runs, so as to enforce the
+content owner's desired security and privacy properties.  For maximum
+generality, I propose to alter the execution environment of unmodified
+binaries, rather than the runtime for a specific language.  Since the
+execution environment is transparent to the application, the insight is that it
+can be componentized for, and distributed across, nodes of varying
+trustworthiness, so as to reflect the latent trust assumptions of the
+application.
+
+
+% Describe different threads of the approach and why they are spanning
+Within this space of distributed execution environments, there are four key
+design choices: (1) the level in the execution environment at which to
+interpose, (2) the method for componentizing the environment, (3) the
+mechanism for communicating between the resultant components, and (4) the types
+of nodes on which these components may run.  I propose to
+design and implement solutions that span this space, so as to understand
+the advantages and disadvantages of each design choice.  I 
+explore interposing on the application's machine code, as by
+dynamic binary instrumention, as well as interposing on the operating system
+services that the application uses, such as the dynamic loader, C runtime, and
+kernel subsystems.  For the latter, I consider cases where traditional
+operating system services, such as storage and network communications, are
+implemented in user-space or in a distributed fashion.  For componentization, I
+explore both static partitions of the environment, as well as dynamic
+partitions based on information flow control rules and runtime information.
+For communication, I consider message passing and thread migration.  For
+the nodes running the execution environment, I consider both secure
+hardware enclaves as well as traditional hardware.
+
+
+% Scope use-cases you will consider/evaluate
+I evaluate my implementations through the ubiquitous and important use case of
+a content provider deploying a web service via a third party.  I consider
+three deployment scenarios, each of which entails different assumptions
+about the third parties involved, notions of execution environment, and
+security and privacy concerns.  Specifically, I evaluate the deployment of
+a website (1) over a content delivery network, (2) as a Tor hidden service,
+and (3) over a decentralized peer-to-peer network.
 \end{abstract}
