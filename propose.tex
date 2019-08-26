@@ -3,3 +3,216 @@
 % What you'd like to research
 % In this section (and throughout), talk about what it means for this
 % research to be successful (greater perfromance, security, etc.)
+
+
+I have two main requirements on the execution environment: (1) a mechanism to
+specify access controls on pinned data and extend these controls as the data
+taints the application's memory space and fileystem, and (2) a mechanism for
+transferring execution to the data-owning host when an unauthorized host
+attempts to access such data.  
+%
+For our trust model, I assume that hosts faithfully execute the application
+code, but may abuse the access controls and execution transfer to attempt to
+glean private data.
+
+
+%% these are the challenges
+For data access controls, there are two subproblems: (1) what is the
+mechanism and granularity for tracking tainted data, and (2) how to represent the
+(distributed) memory space and filesystem are so that a host can only view what
+it has access to.  
+%
+For execution transfer, the problems are (1) how does the host being
+transferred to have enough execution context to make progress, (2) how does a
+host declassify data (so that progress can continue), and (3) how do hosts 
+determine if the transfer is legitimate (occurs at a safe, expected) point in
+the application.  
+%
+Both mechansims need to ensure the how to ensure consistency of shared
+resources.
+%
+Must also keep performance in mind.
+
+% Design Overview
+%----------------------------------------------------------------
+% broad approach
+Use dynamic binary instrumentation via Intel Pin to layer on access controls
+and extends thse controls through taint tracking.  Use process/thread migration
+to transfer control from one host to the next.  The host has a list of valid
+entry points that may be transferred to and uses it's own code segment (rather
+than relying on the code segment being transferred over).
+
+% more details
+A thread of execution within a process can migrate back and forth between
+multiple machines, so the process shares its address space across those
+machines.  Efficient migration is achieved by only migrating what is necessary
+to continue execution.  This enables a process running on one machine to use
+private data stored on another machine without ever having direct access to
+that data by migrating execution to the machine on which the data resides.  That
+machine will perform some computation using the private data (e.g. sign with a
+private key), and then migrate execution back revealing only the public
+result.
+
+A process executes on one machine until it reaches a point where it needs to
+migrate, i.e. it tries to access a page in memory that is not local to that
+machine.  At this point, we freeze and checkpoint the process.  We migrate only
+those memory pages the process will need to continue execution on the other
+machine, which is generally much smaller than the entire memory space.  For a
+use case like keyless SSL, only a very limited number of pages need to be
+migrated.  Based on prior work, we assume that we can perform this migration
+cheaply. 
+
+Once on the new machine, execution picks up where it froze on the previous
+machine.  Execution continues until the next migration point, when we again
+freeze and checkpoint.  In migrating back, we need only send those pages that
+have changed and that are necessary for the other machine to continue
+execution.  On each machine with sensitive data, we perform taint tracking to
+ensure we are not leaking any sensitive data back to the other machine when we
+migrate back.  All pages migrated must be checked for taint before sending.
+
+
+% Challenges
+%----------------------------------------------------------------
+There are multiple challenges.
+
+
+\textbf{Declassifcation}: 
+%
+A tainted private key will result in a tainted signature.
+%
+Similarly, a tainted SQLite file will result in tainted query result.
+%
+Thus, there needs to be a gate that untaints the data, and such a gate almost
+certainly needs to be externally specified (as by the policy itself) (as by the
+policy itself).  
+% 
+Thus, the policy still boils down to knowing the sinks (the sybmol names) that
+declassify/untaint data.
+
+
+\textbf{Control Flow Integrity}:
+%
+We need to check migration is occurring at expected places to prevent exploits.  
+% 
+For instance, upon being migrated to, each machine checks execution is at safe
+state for migration.
+
+
+\textbf{Distributed access controls on memory and other shared resources}:
+%
+The idea is to have a sort of access control: ``This page or file should not cross
+this trust boundary". 
+%
+For instance, within a trusted internal network, multiple machines might all be
+able to migrate a tainted page among one another, but only when it tries to
+leave the internal network should that taint kick into preclude transfer of the
+page.
+
+
+\textbf{Mulithreading and shared resources (e.g., shared meory)}:
+%
+We will want to support multithreading within migrating processes, including
+different threads executing simultaneously on different machines.
+%
+Each thread may migrate back and forth. 
+% 
+Therefore we will need to handle shared memory. 
+%
+If all memory pages must be completely up-to-date, a thread writing to a page
+would need exclusive access to that page.
+
+
+\textbf{Deadlock}:
+%
+Problems will arise when we have tainted and non-tainted data on the same page.
+%
+Specifically, if an untrusted machine needs data on a page with tainted data,
+right now it won't migrate the page.  
+%
+
+The proposed approach to avoid this situation as much as possible is to use two
+memory allocators---one private and one public; trigger migration on entrance
+to "private library" (a library we expect to allocate memory that will become
+tainted, eg openssl).  
+% 
+When calling malloc from a private library, trigger migration private malloc
+only on private machine private allocator allocates to separate set of pages
+allocators for each type of taint - just map to separate area of memory; malloc
+takes heap as argument allocator for each lattice level--- machines should
+access allocators up to but not above their level.
+
+
+However this doesn't guarantee the situation will never happen.
+%
+A fall back could be to zero out tainted data on pages, however the application
+isn't aware of this so need to ensure program correctness.
+%
+On page fault, check addr is not tainted, then only load page for as long as is
+needed to load that data, then remove this probably isn't possible at page
+fault level, only have page address or run pin on all machines to do memory
+tracking for tainted data that has been zeroed out---would require checking on
+each memory access
+
+
+\textbf{Performance}:
+%
+This is a bit out-there, but I wondering if after so many executions, the
+runtime cannot just understand what data is pinned to what operations, and can
+just JIT a new process with the added RPCs.
+%
+That is, there's a ``learning phase", and once the delta in the migration is
+small enough, the runtime does a final JIT and then goes away.
+
+
+Another thing is that it's silly to, when switching execution, also replicate
+the entire environment.
+%
+For instance, an isolation domain for the webserver's private key does not
+need any other file descriptors from the webserver itself.
+%
+Along these lines, it's silly to do a full-on checkpoint and restore for every
+private key operation.
+%
+It's almost like you want to incrementally construct actual piece of the
+process that should run in each security domain and apply deltas, rather than
+reconstruct it each time.
+%
+For instance, if you've already migrated over readonly pages, then don't
+migrate those pages again.
+
+
+\textbf{Limitations}:
+%
+Because we're not currently tracking implicit flows, it would be trivial to
+leak secrets for a malicious application.  
+% not sure I agree with this
+%
+It would also be possible to hijack the declassification sequence to declassify
+data.   We trust the untrusted machine to not modify the application of
+migration system and run the correct code.
+
+
+% Other
+%----------------------------------------------------------------
+%I'm also wondering how this jives with traditional taint tracking, the canonical
+%example of which is tainting data read from a network socket, and
+%checking that the data is not passed thorugh to a system() or a database call
+%without first being untainted by some sanitization function.
+%%
+%This is essentially saying that untrusted network data is exclusively pinned
+%to an isolation domain.
+%
+%
+%% Popcorn
+%%----------------------------------------------------------------
+%
+%
+%replicated-kernel OS based on Linux.
+%
+%Popcorn boots multiple Linux kernels instaces on multicore hardware, one per
+%core or group of cores.
+%
+%Kernels communicate to give to applications the illusion that they are running
+%on top of a single OS.
+%
+%Applications can freely migrate between kernels.
