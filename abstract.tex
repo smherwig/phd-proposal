@@ -1,63 +1,71 @@
 \begin{abstract}
-% Set the stage and problem
 Content owners shift the deployment of their services to untrusted third parties,
 such as cloud infrastructures, content delivery networks, or peer-to-peer
 networks, in order to reduce costs, increase availability, or gain
 additional protections inherent to these hosting environments.
+%
 Unfortunately, such a shift poses a security tradeoff: third-parties that
 take part in the application's distribution potentially gain access to
 sensitive information about the application, its owner, or its users.
 
 
-% Assert insufficiency of existing solutions
-Some applications may be suitably re-designed to address these concerns by
-partitioning the application into trusted and untrusted components, wherein
-the content owner hosts the trusted component.  However, re-designs may be
-costly, and are only appropriate if they avoid shifting major hosting
-responsibilities back to the content owner.  In other cases, there is no
-clear modification to the application that achieves the desired security
-goals without fundamentally changing the service.
+Running applications with strong security and privacy guarantees on untrusted
+third parties is a large and active area of research; it spans uses of
+trusted hardware and functional encryption that seek to continue hosting
+applications completely on third parties, to (re-)designing applications and
+protocols so as to delegate trust, preserve privacy, or otherwise partition
+the application's execution across trust boundaries.
+%
+Unfortunately, this prior work either requires modifications to the
+application, or has severe limits on the types of unmodified applications
+supported.
 
 
-% Broach approach
-Rather than modify the application directly, I propose instead to alter the
-execution environment in which the application runs, so as to enforce the
-content owner's desired security and privacy properties.  For maximum
-generality, I propose to alter the execution environment of unmodified
-binaries, rather than the runtime for a specific language.  Since the
-execution environment is transparent to the application, the insight is that it
-can be componentized for, and distributed across, nodes of varying
-trustworthiness, so as to reflect the latent trust assumptions of the
-application.
+I ask, therefore, whether it is possible to add security and privacy
+guarantees to arbitrary, unmodified applications that were not written with
+such properties in mind, for the purposes of running these applications on
+untrusted hosts.
+%
+This question casts the problem of a posteriori augmenting an application's
+security and privacy as a responsibility of the run-time execution environment.
+%
+Since the execution environment is transparent to the application, the
+insight is that it may be modified, partitioned, and distributed across nodes
+of varying trustworthiness, so as to reflect the security goals of the
+content owner.
 
 
-% Describe different threads of the approach and why they are spanning
-Within this space of distributed execution environments, there are four key
-design choices: (1) the level in the execution environment at which to
-interpose, (2) the method for componentizing the environment, (3) the
-mechanism for communicating between the resultant components, and (4) the types
-of nodes on which these components may run.  I propose to
-design and implement solutions that span this space, so as to understand
-the advantages and disadvantages of each design choice.  I 
-explore interposing on the application's machine code, as by
-dynamic binary instrumentation, as well as interposing on the operating system
-services that the application uses, such as the dynamic loader, C runtime, and
-kernel subsystems.  For the latter, I consider cases where traditional
-operating system services, such as storage and network communications, are
-implemented in user-space or in a distributed fashion.  For componentization, I
-explore both static partitions of the environment, as well as dynamic
-partitions based on information flow control rules and runtime information.
-For communication, I consider message passing and thread migration.  For
-the nodes running the execution environment, I consider both secure
-hardware enclaves as well as traditional hardware.
+I approach the problem from two perspectives: one in which I assume the
+availability of trusted hardware, such as Intel SGX, to provide a trusted
+execution environment (TEE), and one in which I do not assume trusted hardware.
+%
+For the TEE approach, I extend prior work on SGX-based library operating systems
+(libOS) by modifying the libOS to support multi-process, shared resource,
+applications.
+%
+Specifically, my work adapts a libOS into a distributed microkernel, where
+each kernel service (for instance, a filesystem or shared memory) runs in a
+separate SGX enclave and mediates the service's shared resources among the
+application's processes.
+
+For the non-trusted hardware approach, which is the bulk of my new, proposed
+work, I incorporates ideas from information-flow control and thread migration.
+%
+Specifically, I seek to pin private data to host machines, specify
+access controls on the pinned data, extend access controls as the data taints
+the application's memory space and filesystem, and transfer execution to the
+data-owning host when an unauthorized host attempts to access such data.
+%
+I also discuss opportunities for composing the two approaches, as in a
+heterogeneous environment of trusted and non-trusted hardware.
 
 
-% Scope use-cases you will consider/evaluate
-I evaluate my implementations through the ubiquitous and important use case of
-a content provider deploying a web service via a third party.  I consider
-three deployment scenarios, each of which entails different assumptions
-about the third parties involved, notions of execution environment, and
-security and privacy concerns.  Specifically, I evaluate the deployment of
-a website (1) over a content delivery network, (2) as a Tor hidden service,
-and (3) over a decentralized peer-to-peer network.
+I evaluate my work by demonstrating correctness, measuring performance
+overheads, and measuring the ``closeness" of the emergent protocols to
+proposed alternatives.
+%
+I focus on the use cases of deploying TLS-enabled web services on content
+delivery networks (CDNs) without granting the CDN operator the private TLS
+key, as well as running database applications on untrusted third
+parties while maintaining the privacy of the database content.
 \end{abstract}

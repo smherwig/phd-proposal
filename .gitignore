@@ -1,1 +1,5 @@
-*.pdf
+main.aux
+main.bbl
+main.blg
+main.log
+paper.pdf
