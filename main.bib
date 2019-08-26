@@ -194,7 +194,7 @@
 	author = {Yossi Gilad and Amir Herzberg and Michael Sudkovitch and Michael Goberman},
 	title = {{CDN}-on-Demand: {A}n Affordable {DDoS} Defense via Untrusted Clouds},
 	booktitle = NDSS,
-	year = {2016}
+	year = {2016},
 }
 
 @inproceedings{stickler,
@@ -202,6 +202,20 @@
   author={Amit A. Levy and Henry Corrigan-Gibbs and Dan Boneh},
   booktitle=OAKLAND,
   year={2016},
+}
+
+@misc{w3c-subresource-integrity,
+    title = {Subresource Integrity},
+    author = {Devdatta Akhawe and Frederik Braun and Fran\c{c}ois Marier and Joel Weinberger},
+    note = {\url{https://www.w3.org/TR/SRI/}},
+    year = {2016},
+}
+
+@misc{w3c-content-security-policy,
+    title = {Content Security Policy Level 3},
+    author = {Mike West},
+    note = {\url{https://www.w3.org/TR/CSP3/}},
+    year = {2018},
 }
 
 @inproceedings{ssl-splitting,
@@ -239,7 +253,7 @@
 	title={A fully homomorphic encryption scheme},
 	author={Gentry, Craig},
 	year={2009},
-	publisher={Stanford University}
+	publisher={Stanford University},
 }
 
 @misc{talos,
@@ -253,19 +267,18 @@
 	title={Shielding Applications from an Untrusted Cloud with {Haven}},
 	author={Andrew Baumann and Marcus Peinado and Galen Hunt},
 	booktitle=OSDI,
-	year={2014}
+	year={2014},
 }
 
 @inproceedings{scone,
 	title={{SCONE}: {Secure} Linux containers with {Intel SGX}},
 	author={Sergei Arnautov and Bohdan Trach and Franz Gregor and Thomas Knauth and Andre Martin and Christian Priebe and Joshua Lind and Divya Muthukumaran and Dan O'Keeffe and Mark L Stillwell and David Goltzsche and Dave Eyers and R\"{u}diger Kapitza and Peter Pietzuch and Christof Fetzer},
 	booktitle=OSDI,
-	year={2016}
+	year={2016},
 }
 
 @inproceedings{graphene,
-	title={{Graphene-SGX}: {A} Practical Library {OS} for Unmodified
-	Applications on {SGX}},
+	title={{Graphene-SGX}: {A} Practical Library {OS} for Unmodified Applications on {SGX}},
 	author={Chia-Che Tsai and Donald E. Porter and Mona Vij},
 	booktitle=USENIX,
 	year={2017}
@@ -297,6 +310,25 @@
     url = {http://www.ietf.org/rfc/rfc5246.txt},
 }
 
+@misc{xts-ieee,
+	title = {{The XTS-AES Tweakable Block Cipher}},
+	year = 2008,
+	howpublished = {IEEE Std 1619-2007},
+}
+
+@misc{xts-nist,
+	title = {{Recommendation for Block Cipher Modes of Operation: The XTS-AES Mode for Confidentiality on Storage Devices}},
+	year = 2010,
+	howpublished = {NIST Special Publication 800-38E},
+    author = {Morris J. Dworkin}
+}
+
+@misc{plan9,
+	author = {Rob Pike and Dave Presotto and Sean Dorward and Bob Flandrena and Ken Thompson and Howard Trickey and Phil Winterbottom},
+    title = {Plan 9 from Bell Labs},
+    year = {1995},
+}
+
 @misc{tls-session-tickets,
   author = {J. Salowey and H. Zhou and Cisco Sytesma dn P. Eronen and Nokia and H. Tschofenig and Nokia Siemens Networks},
   title = {Transport layer Security ({TLS}) Session REsumption without Server-Side State},
@@ -319,19 +351,70 @@
 @misc{owasp,
 	key = {{OWASP: The Open Web Application Security Project}},
 	title = {{OWASP: The Open Web Application Security Project}},
-	note = {\url{https://www.owasp.org}}
+	note = {\url{https://www.owasp.org}},
+}
+
+@misc{lwext4,
+	note = {\url{https://github.com/gkostka/lwext4}},
+	key = "lwext4",
+	title = {{lwext4}},
+    author= {Grzegorz Kostka},
+}
+
+@misc{heartbleed-cve,
+    note = {CVE-2014-0160 (Heartbleed bug)},
+    howpublished={{Available from MITRE, CVE-ID CVE-2014-0160}},
+    year=2014,
+    note={\url{https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2014-0160}},
+}
+
+@techreport{sgx-trusted-time,
+	Title = {{Trusted Time and Monotonic Counters with Intel® Software Guard Extensions Platform Services}},
+	Howpublished = {\url{https://software.intel.com/sites/default/files/managed/1b/a2/Intel-SGX-Platform-Services.pdf}},
+    author={Shanwei Cen and Bo Zhang},
+    institution={Intel Corporation},
+    year=2017,
+}
+
+@misc{ayeks-sgx-hardware,
+	note = {\url{https://github.com/ayeks/SGX-hardware}},
+	key = "SGX Hardware",
+	title = {{ayeks' SGX Hardware github repository}},
+    author= {Lars L{\"u}hr},
+}
+
+@inproceedings{flexsc,
+ author = {Soares, Livio and Stumm, Michael},
+ title = {{FlexSC: Flexible System Call Scheduling with Exception-less System Calls}},
+ booktitle = OSDI
+ year = {2010},
+} 
+
+@inproceedings{sgx-perf,
+ author = {Weichbrodt, Nico and Aublin, Pierre-Louis and Kapitza, R\"{u}diger},
+ title = {{Sgx-perf: A Performance Analysis Tool for Intel SGX Enclaves}},
+ booktitle = {Proceedings of the 19th International Middleware Conference},
+ series = {Middleware '18},
+ year = {2018},
 }
 
 @misc{roughtime,
     title={Roughtime protocol},
     note={\url{https://roughtime.googlesource.com/roughtime/+/HEAD/PROTOCOL.md}},
-    organization = {Google}
+    organization = {Google},
+}
+
+@misc{graphene-exitless,
+	note = {\url{https://github.com/dimakuv/graphene/tree/exitless}},
+	key = "Graphene-SGX Exitless",
+	title = {{Graphene-SGX Exitless}},
+    author= {Dmitrii Kuvaiskii},
 }
 
 @misc{lets-encrypt,
   key = {{Let's Encrypt}},
   title = {{Let's Encrypt}},
-  note = {\url{https://letsencrypt.org/}}
+  note = {\url{https://letsencrypt.org/}},
 }
 
 @misc{acme,
@@ -357,8 +440,9 @@
     author= {Jens Axboe},
 	note = {\url{git:git.kernel.dk/fio.git}},
 	key = "Fio",
-	title = {Fio 3.13}}
+	title = {Fio 3.13}},
 }
+
 
 %%%%%%%%%%%% OTHERS' %%%%%%%%%%%%%
 
@@ -9111,6 +9195,20 @@
 	howpublished = {Available from \url{https://software.intel.com/sites/default/files/managed/b1/ae/Intel-SGX-SDK-Developer-Guide-for-Windows-OS.pdf}},
 	Title = {{Intel Software Guard Extensions Developer Guide}}}
 
+@misc{sgx-linux-sdk,
+	Author = {{Intel Corporation}},
+	Year = {2016},
+	howpublished = {Available from \url{https://01.org/sites/default/files/documentation/intel_sgx_sdk_developer_reference_for_linux_os_pdf.pdf}},
+	Title = {{Intel Software Guard Extensions SDK for Linux OS}},
+}
+
+@misc{linux-sgx-kernel-driver,
+    author = {{Intel Corporation}},
+    title = {{Linux SGX Kernel Driver}},
+    note = {\url{https://github.com/intel/linux-sgx-driver}}
+    key = "Linux SGX Kernel Driver"
+}
+
 @misc{architecture_guide,
 	Author = {{Intel Corporation}},
 	Date-Modified = {2016-11-11 14:22:02 +0000},
@@ -9121,12 +9219,6 @@
 	Howpublished = {\url{https://software.intel.com/en-us/node/696526}},
 	Title = {{Intel SGX Enabling and Launch Control Functions}}}
 
-@misc{sgx_trusted_time,
-	Howpublished = {\url{https://software.intel.com/sites/default/files/managed/1b/a2/Intel-SGX-Platform-Services.pdf}},
-	Title = {{Trusted Time and Monotonic Counters with Intel® Software Guard Extensions Platform Services}},
-    Author = {Shanwei Cen and Bo Zhang}
-}
-	
 @misc{trustzone,
 	Howpublished = {\url{http://infocenter.arm.com/help/topic/com.arm.doc.prd29-genc-009492c/PRD29-GENC-009492C_trustzone_security_whitepaper.pdf}},
 	Title = {{ARM Security Technology: Building a Secure System using TrustZone Technology}},
@@ -9134,9 +9226,9 @@
 }	
 	
 @inproceedings{oleksenko2018varys,
-  title={Varys: Protecting $\{$SGX$\}$ Enclaves from Practical Side-Channel Attacks},
+  title={{Varys: Protecting SGX Enclaves from Practical Side-Channel Attacks}},
   author={Oleksenko, Oleksii and Trach, Bohdan and Krahn, Robert and Silberstein, Mark and Fetzer, Christof},
-  booktitle={2018 $\{$USENIX$\}$ Annual Technical Conference ($\{$USENIX$\}$$\{$ATC$\}$ 18)},
+  booktitle={{2018 USENIX Annual Technical Conference (USENIX ATC 18)}},
   pages={227--240},
   year={2018}
 }	
@@ -9426,35 +9518,6 @@
 }
 % https://www.akamai.com/us/en/about/our-thinking/white-papers.jsp
 
-@inproceedings {199364,
-author = {Sergei Arnautov and Bohdan Trach and Franz Gregor and Thomas Knauth and Andre Martin and Christian Priebe and Joshua Lind and Divya Muthukumaran and Dan O{\textquoteright}Keeffe and Mark L. Stillwell and David Goltzsche and Dave Eyers and R{\"u}diger Kapitza and Peter Pietzuch and Christof Fetzer},
-title = {{SCONE}: Secure Linux Containers with Intel {SGX}},
-booktitle = {12th {USENIX} Symposium on Operating Systems Design and Implementation ({OSDI} 16)},
-year = {2016},
-isbn = {978-1-931971-33-1},
-address = {Savannah, GA},
-pages = {689--703},
-url = {https://www.usenix.org/conference/osdi16/technical-sessions/presentation/arnautov},
-publisher = {{USENIX} Association},
-}
-
-@article{baumann2015shielding,
-  title={Shielding applications from an untrusted cloud with haven},
-  author={Baumann, Andrew and Peinado, Marcus and Hunt, Galen},
-  journal={ACM Transactions on Computer Systems (TOCS)},
-  volume={33},
-  number={3},
-  pages={8},
-  year={2015},
-  publisher={ACM}
-}
-
-@inproceedings{tsai2017graphene,
-  title={Graphene-SGX: A practical library OS for unmodified applications on SGX},
-  author={Tsai, Chia-Che and Porter, Donald E and Vij, Mona},
-  booktitle={2017 USENIX Annual Technical Conference (USENIX ATC)},
-  year={2017}
-}
 
 @article{liang2018aurora,
   title={Aurora: Providing Trusted System Services for Enclaves On an Untrusted System},

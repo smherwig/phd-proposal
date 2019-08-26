@@ -26,8 +26,9 @@ guarantees to arbitrary, unmodified applications that were not written with
 such properties in mind, for the purposes of running these applications on
 untrusted hosts.
 %
-This question casts the problem of a posteriori augmenting an application's
-security and privacy as a responsibility of the run-time execution environment.
+This question casts the problem of \emph{a posteriori} augmenting an
+application's security and privacy as a responsibility of the run-time
+execution environment.
 %
 Since the execution environment is transparent to the application, the
 insight is that it may be modified, partitioned, and distributed across nodes
@@ -43,8 +44,8 @@ For the TEE approach, I extend prior work on SGX-based library operating systems
 (libOS) by modifying the libOS to support multi-process, shared resource,
 applications.
 %
-Specifically, my work adapts a libOS into a distributed microkernel, where
-each kernel service (for instance, a filesystem or shared memory) runs in a
+Specifically, my work adapts a libOS into a distributed system, where each
+kernel service (for instance, a filesystem or shared memory) runs in a
 separate SGX enclave and mediates the service's shared resources among the
 application's processes.
 
