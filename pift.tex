@@ -1,0 +1,219 @@
+\section{Practical Information Flow Tracking}
+
+% Possible sections/components: 
+% hypervisor and qemu background, filesystem
+% taint label definition "calculus"
+% distributed dift
+% Taint explosion and over-tainting
+
+Fine-grained information flow tracking (IFT) is conceptually simple: memory and
+registers containing sensitive data are tagged with taint labels and these
+labels are propagated in acccordance with the computation.
+
+PIFT (Practical Information Flow Tracking) is a full-system IFT plaftorm.
+
+The hypervisor interposes itself between the hardware platform and the set of
+virutal machines, mediating all access to the physical resources, as well as
+all inter-VM communication.
+
+PIFT focuses mainly on restricting the flow of information between users in an
+organization, security checks need to be performed only when the data is
+externalized in some fashion and no limitations need to be imposed on how the
+data is handled locally on a user's machine.  
+%
+Hence, PFIT intercepts device I/O requests that externalize data in order to
+encforce policies, but does not try to prevent applciation code from touching
+or performing computaiton on sensitive data.
+
+Hypervisors routinely virtualize and mediate access to exit points (i.e.,
+output devices such as network interfaces and blcok storage devices).
+
+The typical implementaiton approach for full-system IFT involves running the
+guest system in a hardware emulator (e.g., QEMU), that has been augmenteed
+with machine instruction analysis and taint tracking capabilities.
+
+PIFT provides a taint-aware filesytsem that enables users to store sensitive data
+(annotated with appropriate taint labels) persistently on disk.
+
+
+In order to ensure that taint labels are preserved across network transfers,
+PIFT transparently augments the networking stack in the guest environment to
+intercept all outbound network packets and annotate the payload with the
+corresponding taint labels.
+
+
+Our implementation employes on-demand taint tracking --- a technique whereby
+the guest system is dyanmically transferred between emulated execution using
+QMEU and native execution within a Xen guest domain. Enabling emulation and IFT
+compution only for those regions of guest code thta direclty interact with
+tainted data allows PIFT to substantially reduce the runtime performance costs.
+
+
+\subsection{Prior Work}
+At a conceptual level, the design of PIFT bears some similarliy to Loki, which
+pushes the data labeling functionality into the hardware platform.
+
+Yet another influential and related research direction is centered aroudn the
+Red/Green isolation paradigm articulared by Butler Lampson et al.
+
+While in TaintCheck and Sweeper policies impose restrictions on fine-grained
+data movement within a process (e.g, "the instruction poitner cannot be loaded
+with a tainted value") with the overal goal of enforcing system
+integrity, PIFT policies seek to ensure confidentiality by confining the flow
+of sensitve user data between principals.
+
+Neon explores system support for derived data managment and proposes a set of
+mechanisms that enable orgainzation to enforce end-to-end data containment
+policies.  Analogously to PIFT, this system seeks to achive binary-level
+compatibility with exiting operating systems and paplications using a
+hypervisor-based desing.  Neon asscoiates a 32-bit tint, which represetns a
+policy, with each byte in the guest virtual machine and uses a modified version
+of QEMU to track the propagation of tints between memory and CPU regsiters at
+the level of machine instructioms.  Similar to its predecssor and our system,
+Neon implements on-demand emaultions and uses the paging hardware to trap
+the inital access to senstive data during native execution.
+
+Ho el al. [41] propose demand emulation as a practical technique for online
+full-system taint tracking, whereby a hypervisor and taint tracking emulator
+cooperate to dynamically switch the guest system between native virtualized and
+emulated modes of exeuction.
+
+
+\subsection{Thesis}
+Central problem: controlling the flow of sensitive user data in a distributed
+environment without modifying the software stack or augmenting the hardware
+platform.
+
+
+\subsection{Labels}
+PIFT's mechanismes for policy specification and enforcement are based on the
+decentralized label modes [56, 57] -- a simple, but powerful model of access
+ctonrol that enables multiple principals to protect their proivate information
+and share it in a controlled manner.  In a decentalrized label model, each data
+value is assigned a alble, which expresses a certain set of restrctiions on its
+disemination.  Conceptually, a label represents an unordered set of
+confidentialiaty policies.  Each policy has an owner and defines a set of
+authorized readers.  
+
+
+\subsection{Taint Explosion}
+For kernel taint explosion, we show that a major cause of this phenonmenon on
+Linux is accidentail tainting of kernel control data structures.  We undertake
+a detailed analysis and track its origin to a small number of kernel entry
+functions.  By interposing at these specific entry poitns and securtly
+scrubbing tant, we prevent accidetnail taining of these data strucutres and
+effectively eliminate Linux kernel tain explosion for all practical purposes.
+
+\subsection{Design}
+The focal component of our design is an augmented hypervisor -- a thin software
+layer that exposes the underlying hardware platfrom in a virtualized form and
+allows several virtual machiens to execute concurrenlty.  Our system is based
+on Xen.
+
+All user-facing applications run inside a protected virtual machine (VM) atop
+the hypervisor.  In addition, a special control VM operates in the background
+and provides a number of supporting modules: a robuest full-sytem emulator, a
+label-aware filesystem, and drivers for virtualized I/P devices.  PIFT-XEN
+tracks the propagation of labels between the virtual CPU registers, memory, and
+disk belonging to the protected VM.  The hyperviros also intercepts all
+externally observed output actions (e.g., network communications, writing
+data to a mobile storage decie, sending  data to a printer) that enforces
+policies allowing or denying specific application requests to externalize
+sensitive data.
+
+Initially, all application- and OS-level code in the protected VM execute at
+native speed directly on the host CPU, but the hypervisor instruments the
+hardware page tables in a manner that allows us to intercept instructions that
+access tainted memroy pages.  When the application first opens the sensitive file,
+the call is routed via the hypervisor to the label-aware filesystem running
+in the control VM.  Before returning the file handle, the filesytem makes a
+call to the hypervisor, informing it of the file's label.  In response, the
+hypervisor marks the memory pages holding the file contents as tainted and
+updates the page tables accordingly.
+
+When an applciation running in the protected VM tries to access the file
+contents from a tainted memory page, the hardware memory management unit
+generates a page fault and immediately transfers control to PIFT-Xen.
+The hypervisor suspends the native exeuction context of the protected VM, takes
+a snapshot of its CPU registers state, and transfers contorl to our augmented
+emualtor, which resumtes tje execution of the proteced VM in emulated mode.
+Our current implementation handles emualtion using a heavily-modified verison
+of QEMU, which runs as a uer-level process in the control VM.  The emulator is
+instrumented to tack the movment of labels in accordagne with the IFT model.
+
+On a conceptual level, PIFT associates a data label with each
+individually-addressable byte in the protected VM.
+
+
+\subsection{Distributed Labels and Externalizing Tainted Data}
+When the protected VM tries to externalize tainted data through an I/O device,
+PIFT intercepts the device request and invokes the appropraite security
+checks.  These operations are handled by a group of device-specific
+interception modules that are implemented as extensions to the backend
+device drivers operating in the control VM.
+
+\subsection{Label-aware Filesystem}
+In the current desing, we create and deploy a PIFT-ext3 filesytem inside the
+control VM and export it to the user-facing VM through a standard remote file
+access protocol (NFSv3).  While this split-up configuration is not as efficient
+as running PIFT-ext3 directly inside the protected VM and incurs addtional
+latency overhead, it allows us to mainting full compatibilty with unmodified OS
+biaries.
+
+
+\subsection{Implementation Details}
+Intercepting the Initiail Access to Sensitive Data:  The key challenge in
+trapping tainted data access is efficiency: a naive implementation would trap to
+the hypervisor upon every memory access from the guest VM to determine whether
+sensitive data is being accessed, but this strategy would incur unacceptable
+overhead.  Instead, we leverage the capabilities of the hardware paging unit
+and configure it to generate a trap upon every access to a memory page that is
+known to contain sensitive data.  To accopmlish this, PIFT-Xen creates a set of
+shadow page tables for the guest environment, clearing the PAGE\_PRESENT (P)
+flag in the shadow PTEs that hold mapping to tainted memory pages.  Thus, when
+the guest VM tries to access a tainted page (either for reading or writing),
+the memory managment unit gernates a  page fault and transfers control to a
+hypervisor-level fault handler.
+
+
+Switching between Virtualized and Emulated Execution: Migrating the protected
+system from the virtualized mode of exeution to the emulated mode involves
+suspending the native VM, producing a comprehensive snapshot of its virtual CPU
+state, and initializing the emulated processor from this snapshot.  In PIFT,
+the
+hypervisor and the emulator coordinate their activities and exchange state using
+a common data structure in a shared memory page.  in the first phase, the
+hypervisor initailzies the guests' strcuture that encpasulstes a snaphsot of
+the virtual CPU.  Once a comprehensive snapshot has been obtinated, teh
+hypervisor signals QEMU through a virutal IRQ and instructs it to initiaate
+emualtion.  When QEMU receives this signal, it initailizes the state of the
+emulated CPU based on the information containted in the snapshot and luanches
+teh main emulation loop.
+
+
+Our approach to taint tracking is based on augmenting the emualted machine with
+a virtual hardware extenions in the form of a taint processor.
+
+The emulated (guest) machine executes in the context of a single user-space
+emulator process in the host OS and all elements of the guest machine state,
+including its CPU registers, physical memory, and various peripherals,
+are represetned with corresponding data structures in the address
+space of this process.  To emulate memory accesses from the guest machine, QEMU
+implements a software-based memory management unit that provides guest-virtual
+to guest-physical address translation, mimicking the behavior of a hardware MMU
+for the guest architecture.  In addition, a software-based TLB maintains
+mapping between guest virtual addresses and the corresponding addresses in the
+emulator's own virtual address space.
+
+The taint processor is the central arehtictural module of our information
+flow tracking substrate.  This module is tasked with consuming and executing
+blocks of taint tracking insturctions produced by the code translator.
+
+
+In order to realize the full benefits of PIFT, including its taint-aware
+storage and on-demand emulation capablities, we must establish proper
+interactions between the emualtor and the other central components of the
+system, such as the hypervisor adn the taint-aware filesystem.  This
+necessiates several addtional changes and extensions to QMEU.
+
+% During statrtup, the emualtor allocates ...
