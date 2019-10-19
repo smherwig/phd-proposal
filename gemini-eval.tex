@@ -1,0 +1,155 @@
+\section{Proposed Gemini Evaluation}
+\label{sec:gemini-eval}
+% Short intro that covers the gist: correctness and performance concerns.
+%
+% each subsection a question.  One or two paragraphs that expound upon the
+% question and point to an evaluation method/tool.
+
+
+\subsection{Correctness}
+%
+I need to ensure that a process running on Gemini shows the correct behavior
+(program correctness), the isolation of pinned data (security correctness), and
+the accuracy of the firewall rules (again, security correctness).
+%
+Pragmatically, this amounts to writing unit tests.
+%
+Additionally, it may involve showing generality by, for instance, instrumenting
+more than just OpenSSL (the macro-benchmarks can also help to show generality
+at the application-level).
+%
+For demonstrating data isolation, you might have an external program that just
+dumps and scans a process's memory for a given byte string.
+
+
+% TODO: try to think of a few correctness conditions, and what the unit test
+% would look like for each one.  You might also consider tests for different
+% application models, such as a single-threaded vs multi-threaded, vs
+% multi-process application.
+
+
+% TODO:
+
+
+\subsection{Performance}
+
+\subsubsection{Micro-benchmarks}
+
+\parhead{How precise is taint-tracking?}
+% - how do you know that taint tracking is being performed correctly
+%   (not overtaintint, not undertainting).
+% - eval at the call graph level 
+%   take eleos annoations as hints --
+%
+Taint-tracking implementations may be susceptible to over-tainting or
+under-tainting.
+%
+We develop a profiling tool that logs the functions that operate on
+tainted data, and from these logs construct the call-graph the target machine
+evaluates.
+%
+We use this tool to collect the call-graphs for migrations that compute a
+signature
+%
+We compare this call-graph to the call-graph induced by prior manual or
+static-analysis-based partitioning schemes applied to OpenSSL\@.
+%
+We also evaluate whether the call graph is stable across migrations.
+
+
+\parhead{What is the overhead of migration?}
+% The idea is:
+%   - understand the mechanics of migration and "profile" each of its steps.
+%       - this might point out certain optimizations
+%   - compare to alterntavies
+%       - to understand tradeoffs/overheads compared to alternatives
+%
+Suppose a thread migrates to a target machine that has pinned a private key in
+order to compute a signature with that key.
+%
+At the network level, how would a packet capture of the migration compare to
+that of an alternative RPC-based implementation, such as keyless SSL\@?
+%
+In particular, how much traffic and how many round-trips does migration incur,
+what is the purpose of each round-trip, and what is the corresponding ratio of
+goodput to throughput?
+%
+Moreover, is each migration identical?
+
+
+Closely related to the previous question, we seek to measure the latency of
+migration and the related operations.
+%
+Direct overhead costs include network latency, while indirect costs include the
+operations of checkpointing and restoring threads, as well as any TCP queuing
+delays incurred by the source machine while its threads are paused, waiting for
+the migration to return.
+
+
+\parhead{How much time does the application spend on each machine?}
+%
+Since the use-cases involve an organization outsourcing an application to a
+service provider, it would defeat the purpose if the application spent the
+majority of the time on organization's machine.
+%
+Note that ``time" may not be the correct metric.
+
+
+\parhead{What is the overhead of taint tracking and policy enforcement?}
+
+We evalute the overhead of the monitor performing taint tracking on some common
+set of benchmarks (e.g., SPEC), adjusting the amount of data that is tainted.
+
+
+\subsubsection{Macro-benchmarks}
+
+% nginx: apachebench
+% bind, knot DNS, nds: dnsperf
+% exim, postfix, qmail, sendmail: smtp-source
+%
+Give our use-cases of an HTTPS, DNS, and mail server, we stress test an
+implementation of each server running in a standard Linux environment, and
+compare request throughput and latency to the server running on top of Gemini.
+%
+Specifically we stress test the NGINX webserver using ApacheBench, the BIND DNS
+server using \texttt{dnsperf}, and the postfix mail server using
+\texttt{smtp-source}.
+
+
+For each server, we benchmark several deployment scenarios.
+%
+In particular, does the deployment have only the organization pinning data (one
+or more private keys), or does the service provider itself also pin data (such
+as a spam or web application firewall rules).
+%
+In the former case, only the organization runs a process-monitor.
+
+
+Furthermore, does the service support only one organization, or multiple?
+%
+For instance, the NGINX webserver can virtually host many sites, and thus,
+under Gemini, could migrate to different organizations based on the request.
+%
+The application server might also support different server models, such as
+multi-process or multi-threaded.
+%
+In a multi-process, multi-tenant configuration of NGINX, each worker process
+is single-threaded and could migrate to a different organization
+simultaneously, whereas in a multi-threaded configuration, only a single thread
+could migrate away from the service provider any time.
+
+
+Additionally, what is the granularity of the firewall rules each organization
+installs on the service provider's Gemini instance?
+%
+Are there no firewall rules, and Gemini is used purely for migration?
+%
+Are the firewalls simply inspecting taint at the protocol-field level, or
+performing deep packet inspection, and using an in-kernel
+implementation of TLS to inspect encrypted packets. 
+
+
+
+% TODO: How is each server's evaluation different from one another?
+% That is, are you able to evaluate something on a mail server that you aren't
+% able to evalute on a webserver?

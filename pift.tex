@@ -5,41 +5,102 @@
 % taint label definition "calculus"
 % distributed dift
 % Taint explosion and over-tainting
+%
+% What is the high-level problem
+%   Same as keyless
+%
+% What are the goals
+%   - if you're just protecting the private key, it's lame.  Try
+%     to ensure integrity or confidentiality of more things.
+%
+% What is the motivating use-case
+%   - CDN
+%
+% How is taint represented and stored; what do labels mean?
+%
+% How does the transition from protected VM to monitor work (V2E)?
+%   How does the monitor ensure the transition is valid (i.e, CFI stuff).
+%
+% How does the transition form monitor VM to protected work (E2V)?
+%
+% How is taint persisted on a filesystem
+%
+% How is taint initialized?
+%
+% How is taint propagated across a network?
+%
+% How does taint deal with multiple principles/tenants?
+% 
+% How does taint migrate during a VM migration?
+%
+% How are VMs provisioned? (by customer or CDN operator, in the case of renting)
+%
+% Can taint-based deadlock occur?  How is this resolved?
+%
+% Can taint be declassified?
 
-Fine-grained information flow tracking (IFT) is conceptually simple: memory and
-registers containing sensitive data are tagged with taint labels and these
-labels are propagated in acccordance with the computation.
+\subsection{Problem}
+Central problem: controlling the flow of sensitive user data in a distributed
+environment without modifying the software stack or augmenting the hardware
+platform.
+
+
+\subsection{Abstract Ideas}
+
+Fine-grained information flow tracking (IFT) is conceptually simple: the
+runtime environment tags memory and registers containing sensitive data with
+labels, and propagates these labels through the memory space and filesystem in
+acccordance with the computation.
+%
+% (sources and sinks)
+Traditional use-cases for IFT have a source and sink model where labels are
+assigned at sinks and checked at sources.  For instance, untrusted data recieved from the
+network might be tagged, and the code that constructs a database query checks
+that the query does not containted tagged data.  Similary, the runtime might
+check that tagged data has not overwritten a control register (i.e.,
+\texttt{RIP}), which might be indicated of an exploit attempt.
+
+IFT is also used as a sort of mandatory access control on data and derived data,
+and thus restirctsion the flow of information between users in an
+organization; security checks need to be performed only when the data is
+externalized in some fashion and no limitations need to be imposed on how
+the data is handled locally on a user's machine.  
+
+
+\subsection{Trust Model}
+For our trust model, I assume that hosts faithfully execute the application
+code, but may abuse the access controls and execution transfer to attempt to
+glean private data.
+
+
+Because we're not currently tracking implicit flows, it would be trivial to
+leak secrets for a malicious application.  
+% not sure I agree with this
+%
+It would also be possible to hijack the declassification sequence to declassify
+data.   We trust the untrusted machine to not modify the application of
+migration system and run the correct code.
+
+
+\subsection{Design}
 
 PIFT (Practical Information Flow Tracking) is a full-system IFT plaftorm.
 
 The hypervisor interposes itself between the hardware platform and the set of
-virutal machines, mediating all access to the physical resources, as well as
+virtual machines, mediating all access to the physical resources, as well as
 all inter-VM communication.
+%
+Hypervisors routinely virtualize and mediate access to exit points (i.e.,
+output devices such as network interfaces and blcok storage devices).
+%
+The typical implementation approach for full-system IFT involves running the
+guest system in a hardware emulator (e.g., QEMU), that has been augmenteed
+with machine instruction analysis and taint tracking capabilities.
 
-PIFT focuses mainly on restricting the flow of information between users in an
-organization, security checks need to be performed only when the data is
-externalized in some fashion and no limitations need to be imposed on how the
-data is handled locally on a user's machine.  
 %
 Hence, PFIT intercepts device I/O requests that externalize data in order to
 encforce policies, but does not try to prevent applciation code from touching
 or performing computaiton on sensitive data.
-
-Hypervisors routinely virtualize and mediate access to exit points (i.e.,
-output devices such as network interfaces and blcok storage devices).
-
-The typical implementaiton approach for full-system IFT involves running the
-guest system in a hardware emulator (e.g., QEMU), that has been augmenteed
-with machine instruction analysis and taint tracking capabilities.
-
-PIFT provides a taint-aware filesytsem that enables users to store sensitive data
-(annotated with appropriate taint labels) persistently on disk.
-
-
-In order to ensure that taint labels are preserved across network transfers,
-PIFT transparently augments the networking stack in the guest environment to
-intercept all outbound network packets and annotate the payload with the
-corresponding taint labels.
 
 
 Our implementation employes on-demand taint tracking --- a technique whereby
@@ -48,41 +109,10 @@ QMEU and native execution within a Xen guest domain. Enabling emulation and IFT
 compution only for those regions of guest code thta direclty interact with
 tainted data allows PIFT to substantially reduce the runtime performance costs.
 
+The control VM has a list of valid entry points that may be transferred to and
+uses it's own code segment (rather than relying on the code segment being
+transferred over).
 
-\subsection{Prior Work}
-At a conceptual level, the design of PIFT bears some similarliy to Loki, which
-pushes the data labeling functionality into the hardware platform.
-
-Yet another influential and related research direction is centered aroudn the
-Red/Green isolation paradigm articulared by Butler Lampson et al.
-
-While in TaintCheck and Sweeper policies impose restrictions on fine-grained
-data movement within a process (e.g, "the instruction poitner cannot be loaded
-with a tainted value") with the overal goal of enforcing system
-integrity, PIFT policies seek to ensure confidentiality by confining the flow
-of sensitve user data between principals.
-
-Neon explores system support for derived data managment and proposes a set of
-mechanisms that enable orgainzation to enforce end-to-end data containment
-policies.  Analogously to PIFT, this system seeks to achive binary-level
-compatibility with exiting operating systems and paplications using a
-hypervisor-based desing.  Neon asscoiates a 32-bit tint, which represetns a
-policy, with each byte in the guest virtual machine and uses a modified version
-of QEMU to track the propagation of tints between memory and CPU regsiters at
-the level of machine instructioms.  Similar to its predecssor and our system,
-Neon implements on-demand emaultions and uses the paging hardware to trap
-the inital access to senstive data during native execution.
-
-Ho el al. [41] propose demand emulation as a practical technique for online
-full-system taint tracking, whereby a hypervisor and taint tracking emulator
-cooperate to dynamically switch the guest system between native virtualized and
-emulated modes of exeuction.
-
-
-\subsection{Thesis}
-Central problem: controlling the flow of sensitive user data in a distributed
-environment without modifying the software stack or augmenting the hardware
-platform.
 
 
 \subsection{Labels}
@@ -95,14 +125,6 @@ disemination.  Conceptually, a label represents an unordered set of
 confidentialiaty policies.  Each policy has an owner and defines a set of
 authorized readers.  
 
-
-\subsection{Taint Explosion}
-For kernel taint explosion, we show that a major cause of this phenonmenon on
-Linux is accidentail tainting of kernel control data structures.  We undertake
-a detailed analysis and track its origin to a small number of kernel entry
-functions.  By interposing at these specific entry poitns and securtly
-scrubbing tant, we prevent accidetnail taining of these data strucutres and
-effectively eliminate Linux kernel tain explosion for all practical purposes.
 
 \subsection{Design}
 The focal component of our design is an augmented hypervisor -- a thin software
@@ -145,20 +167,88 @@ On a conceptual level, PIFT associates a data label with each
 individually-addressable byte in the protected VM.
 
 
-\subsection{Distributed Labels and Externalizing Tainted Data}
+\subsubsection{Distributed Labels and Externalizing Tainted Data}
+In order to ensure that taint labels are preserved across network transfers,
+PIFT transparently augments the networking stack in the guest environment to
+intercept all outbound network packets and annotate the payload with the
+corresponding taint labels.
+%
 When the protected VM tries to externalize tainted data through an I/O device,
 PIFT intercepts the device request and invokes the appropraite security
 checks.  These operations are handled by a group of device-specific
 interception modules that are implemented as extensions to the backend
 device drivers operating in the control VM.
 
-\subsection{Label-aware Filesystem}
+
+\subsubsection{Label-aware Filesystem}
+PIFT provides a taint-aware filesytsem that enables users to store sensitive data
+(annotated with appropriate taint labels) persistently on disk.
 In the current desing, we create and deploy a PIFT-ext3 filesytem inside the
+
 control VM and export it to the user-facing VM through a standard remote file
 access protocol (NFSv3).  While this split-up configuration is not as efficient
 as running PIFT-ext3 directly inside the protected VM and incurs addtional
 latency overhead, it allows us to mainting full compatibilty with unmodified OS
 biaries.
+
+
+\subsection{Challenges}
+
+\subsubsection{Taint Explosion}
+For kernel taint explosion, we show that a major cause of this phenonmenon on
+Linux is accidentail tainting of kernel control data structures.  We undertake
+a detailed analysis and track its origin to a small number of kernel entry
+functions.  By interposing at these specific entry poitns and securtly
+scrubbing tant, we prevent accidetnail taining of these data strucutres and
+effectively eliminate Linux kernel tain explosion for all practical purposes.
+
+\subsubsection{Liveness}
+\paragraph{Declassification}
+%
+A tainted private key will result in a tainted signature.
+%
+Similarly, a tainted SQLite file will result in tainted query result.
+%
+Thus, there needs to be a gate that untaints the data, and such a gate almost
+certainly needs to be externally specified (as by the policy itself) (as by the
+policy itself).  
+% 
+Thus, the policy still boils down to knowing the sinks (the sybmol names) that
+declassify/untaint data.
+
+
+\paragraph{Taint Deadlock and Thrashing}:
+%
+Problems will arise when we have tainted and non-tainted data on the same page.
+%
+Specifically, if an untrusted machine needs data on a page with tainted data,
+right now it won't migrate the page.  
+%
+
+The proposed approach to avoid this situation as much as possible is to use two
+memory allocators---one private and one public; trigger migration on entrance
+to "private library" (a library we expect to allocate memory that will become
+tainted, eg openssl).  
+% 
+When calling malloc from a private library, trigger migration private malloc
+only on private machine private allocator allocates to separate set of pages
+allocators for each type of taint - just map to separate area of memory; malloc
+takes heap as argument allocator for each lattice level--- machines should
+access allocators up to but not above their level.
+
+
+However this doesn't guarantee the situation will never happen.
+%
+A fall back could be to zero out tainted data on pages, however the application
+isn't aware of this so need to ensure program correctness.
+%
+On page fault, check addr is not tainted, then only load page for as long as is
+needed to load that data, then remove this probably isn't possible at page
+fault level, only have page address or run pin on all machines to do memory
+tracking for tainted data that has been zeroed out---would require checking on
+each memory access
+
+
 
 
 \subsection{Implementation Details}
@@ -217,3 +307,53 @@ system, such as the hypervisor adn the taint-aware filesystem.  This
 necessiates several addtional changes and extensions to QMEU.
 
 % During statrtup, the emualtor allocates ...
+
+
+
+
+\subsection{Reasons why CDN Taint Tracks}
+% The thought is that the CDN might want to taint-track for the reasons these
+% taint-trackign systems were originally developed, and our solution should
+% compose with this usage as well.
+
+%I'm also wondering how this jives with traditional taint tracking, the canonical
+%example of which is tainting data read from a network socket, and
+%checking that the data is not passed thorugh to a system() or a database call
+%without first being untainted by some sanitization function.
+%%
+%This is essentially saying that untrusted network data is exclusively pinned
+%to an isolation domain.
+
+
+\subsection{Prior Work}
+At a conceptual level, the design of PIFT bears some similarliy to Loki, which
+pushes the data labeling functionality into the hardware platform.
+
+Yet another influential and related research direction is centered aroudn the
+Red/Green isolation paradigm articulared by Butler Lampson et al.
+
+While in TaintCheck and Sweeper policies impose restrictions on fine-grained
+data movement within a process (e.g, "the instruction poitner cannot be loaded
+with a tainted value") with the overal goal of enforcing system
+integrity, PIFT policies seek to ensure confidentiality by confining the flow
+of sensitve user data between principals.
+
+Neon explores system support for derived data managment and proposes a set of
+mechanisms that enable orgainzation to enforce end-to-end data containment
+policies.  Analogously to PIFT, this system seeks to achive binary-level
+compatibility with exiting operating systems and paplications using a
+hypervisor-based desing.  Neon asscoiates a 32-bit tint, which represetns a
+policy, with each byte in the guest virtual machine and uses a modified version
+of QEMU to track the propagation of tints between memory and CPU regsiters at
+the level of machine instructioms.  Similar to its predecssor and our system,
+Neon implements on-demand emaultions and uses the paging hardware to trap
+the inital access to senstive data during native execution.
+
+Ho el al. [41] propose demand emulation as a practical technique for online
+full-system taint tracking, whereby a hypervisor and taint tracking emulator
+cooperate to dynamically switch the guest system between native virtualized and
+emulated modes of exeuction.
+
+
+
+

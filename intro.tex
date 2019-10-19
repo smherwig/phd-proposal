@@ -1,223 +1,121 @@
 \section{Introduction}
 \label{sec:intro}
-%    What problems are you trying to solve
-%    carve out the space
+
+Software is often written assuming monolithic trust assumptions, meaning that
+the user tacitly trusts both the software and the environment in which it runs.
 %
-%   We need cover concepts/problems that are common to all
-%   the deployment stragegies, as well as define common terms here.
+This assumption worked fine in the past, when an organization developed the
+software, owned the infrastucture, and administered all parts of the resultant
+system.
+%
+However, the trust assumption must be updated as new deployment scenarios bcome available.
+%
+A prime example is an organizations that outsources its services to untrusted
+third parties, such as content delivery networks and mail providers.
+%
+Outsourcing is an attractive way for an organization to to reduce costs,
+increase availabilty, or gain additional protections inherent to these hosting
+environments.
+%
+Unfortunately, such a deployment poses a security tradeoff: the third party
+providers that offer or deploy these services potentially gain access to
+sensitive information about the organization and its clients, and the
+organization may no longer have insight into what specific software is
+implementing the service.
 
 
-\subsection{Content Delivery Networks} % {{{
-
-CDNs are third-party services that host their customers' websites (and
-other data).
+% TODO: maybe expand this paragraph a bit
 %
-Virtually all of the most popular websites (and a very long tail of
-unpopular websites) use one or more CDNs to help reliably host their
-content~\cite{key-sharing}.
+% XXX: the problem is larger than just running trusted software on an untrusted
+% host.
+Running applications with strong security and privacy guarantees on untrusted
+third parties is a large and active area of research; it spans uses of
+trusted hardware and functional encryption that seek to continue hosting
+applications completely on third parties, to (re-)designing applications and
+protocols so as to delegate trust, preserve privacy, or otherwise partition
+the application's execution across trust boundaries.
 %
-Historically, CDNs have been thought of as a massive web
-cache~\cite{cdn-on-demand}, but today's CDNs play a critical role in
-achieving the performance and security that the web relies
-on~\cite{securing-cdns}.
-
-
-We identify four key roles that fundamentally define today's CDNs, and
-their enabling technologies:
-
-\parhead{Low latency to clients:} % {{{
-%
-The primary driving feature of CDNs is their ability to offer low
-page-load times for clients visiting their customers' websites.
-	
-\smallskip\noindent
-%
-\emph{How they achieve this:}
-%
-CDNs achieve low latencies via a massive, global network of
-\emph{multi-tenant edge servers}.
-%
-Edge servers act primarily as reverse proxy web servers for the CDN's
-customers: to handle client requests, edge servers retrieve content
-from the customers' \emph{origin servers}, and cache it so they can
-deliver it locally.
-%
-CDNs direct client requests to the edge servers in a way that balances
-load across the servers, and that minimizes client latency---often by
-locating the ``closest'' server to the client.
-%
-There are many sophisticated means of routing clients to nearby
-servers, involving IP geolocation, IP anycast, and DNS load
-balancing.
+Unfortunately, this prior work either requires modifications to the
+application, or has severe limits on the types of unmodified applications
+supported.
 
 
-Edge-network services like CDNs therefore derive much of their utility
-from the fact that they have servers close to most clients.
-%
-To this end, CDNs deploy their own data centers, and deploy servers
-within other organizations' networks, such as college campuses, ISPs,
-or companies.
-%
-Indeed, today's CDNs have so many points of presence (PoPs) that they
-often are within the \emph{same} network as the clients visiting their
-sites.
-%
-To support such proximity without an inordinate number of machines,
-CDNs rely on the ability to host multiple tenants (customers) on
-their web servers at a time.
+% this is too specific
+My thesis is:
+\begin{displayquote}
+    It is possible to run legacy application binaries with confidentiality and
+    integrity guarantees that reflect the trust model in which the application
+    is deployed.
+\end{displayquote}
+% Running unmodified, legacy binaries that have monolithic trust assumptions in
+% environments where such assumptions do not hold.  
 
-% }}}
+% For instance, an organization to outsource their unmodified, legacy, services
+% to an untrusted hosting provider, who may in fact provide the service itself,
+% without leaking private data to the provider and with guarantees that the
+% provider does not deviate from the service's expected behavior.
 
-\parhead{Manage customers' keys:} % {{{
+The constraint of running unmodified, legacy services implies that the
+enforcement of such security, privacy, and correctness guarantees is the
+responsibilty of the service's run-time execution environment. 
 %
-As the web moves towards
-HTTPS-everywhere~\cite{felt-2017-https}, customers increasingly
-rely on CDNs to store their HTTPS certificates and the corresponding
-secret keys, so that they can accept TLS connections while maintaining
-low latency to clients.
-
-
-\smallskip\noindent
-%
-\emph{How they achieve this:}
-%
-CDNs manage their customers' keys in a variety of ways: sometimes
-by having their customers upload their secret keys, but typically by
-simply generating keys and obtaining certificates on their customers'
-behalf~\cite{key-sharing,when-https-meets-cdn}.
-%
-Many CDNs combine multiple customers onto single ``cruiseliner
-certificates'' under the same key pair---these customers are not allowed
-to access their own private keys, as that would allow them to
-impersonate any other customer's website on the same cruiseliner
-certificate~\cite{key-sharing}.
-%
-A recent protocol, Keyless SSL~\cite{keyless-ssl}, has been proposed
-to address this; we describe this in more detail in \S\ref{sec:prior}.
-
-% }}}
-
-\parhead{Absorb DDoS traffic:} % {{{
-%
-CDNs protect their customers by filtering DDoS traffic, keeping it from
-reaching their customers' networks.
-
-\smallskip\noindent
-%
-\emph{How they achieve this:}
-%
-CDNs leverage economies of scale to obtain an incredible amount of
-bandwidth and computing resources.  Their customers' networks block
-most inbound traffic, except from the CDN\@.
-%
-Thus, attackers must overcome these huge resources in order to impact a
-customer's website.
-
-% }}}
-
-\parhead{Filter targeted attacks:} % {{{
-%
-An often overlooked but critical feature~\cite{securing-cdns} of
-today's CDNs is the ability to filter out (non-DDoS) attack traffic,
-such as SQL injection and cross-site scripting attacks.
+Since the execution environment is transparent to the application, the insight
+is that it may be modified, partitioned, and distributed across domains of
+varying trustworthiness, so as to reflect the security goals of the
+organization.
 
 
-\smallskip\noindent
+The design space is influenced by two factors: the presence of trusted
+hardware, and the organization's trust in the application.
 %
-\emph{How they achieve this:}
+% Untrusted means the application may deviate arbitrarily from its stated
+% purpose, subject to standard cryptographic assumptions, and, in particular, may
+% actively try to leak sensitive data.
 %
-Unlike with DDoS traffic, the primary challenge behind protecting
-against targeted attacks is \emph{detecting} them.
+In my preliminary work, conclaves, I assume the presence of Intel SGX hardware
+enclaves and that the content owners trust the service.
 %
-CDNs achieve this by running \emph{web-application firewalls (WAFs)},
-such as ModSecurity~\cite{modsecurity}.
+Conclaves extends prior work on SGX-based library operating systems (libOS) by
+modifying a libOS to support running a broader set of legacy services
+within enclaves: namely, multi-process, shared resource, applications.
 %
-WAFs analyze the plaintext HTTP messages, and compare the messages against
-a set of rules (often expressed as regular expressions~\cite{owasp})
-that indicate an attack.
+% Specifically, conclaves is distributed system reminiscent of a microkernel,
+% where each kernel service (for instance, a filesystem or shared memory)
+% runs in a separate enclave and mediates the service’s shared resources
+% among the application’s processes.
+
+
+My proposed work, Gemini, makes assumptions about the availability of trusted
+hardware and the trustworthiness of the application into policy specifications
+on the part of the organization.
 %
-Edge servers only permit benign data to pass through to the customer's
-origin server.
+Gemini is an execution environment that offers two complementary abstractions:
+(1) \emph{distributed container}, where organizations may pin sensitive data to hosts
+that they trust; a thread's exeuction migrates to the trusted host when
+computing with the sensitive data or any sensitive data derived from it, and
+(2) \emph{policy monitors}, which are modules that an organization may installed in a
+trusted environment that enforce expected behavior of untrusted application.
+%
+A key feature of policy monitors is that the policies enforce fine-grain
+information flows.
+
+
+To demonstrate this thesis, I make the following contributions:
+
+This proposal is organized as follows:
+
+% I evaluate my work by demonstrating correctness, measuring performance
+% overheads, and measuring the “closeness” of the emergent protocols to proposed
+% alternatives. I focus on the use cases of deploying TLS-enabled web services on
+% content delivery networks (CDNs) without granting the CDN operator the private
+% TLS key, as well as running database applications on untrusted third parties
+% while maintaining the privacy of the database content.
+
+
+% The conclaves
+% paper is my "prior" work for this thesis, and the new work deals with migrating
+% processes across trust domains (the unfinished work of a previous graduate
+% student).
 
 
 
-\subsection{Security Implications of CDNs} % {{{
-
-Simultaneously fulfilling these four roles---low latency, key
-management, absorbing large attacks, and blocking small
-attacks---inherently requires processing client requests on
-edge servers.
-%
-In the presence of HTTPS, however, this processing requires
-edge servers to have at least each TLS connection's session key, if not
-also each customer's private key.
-
-It is therefore little surprise that CDNs have amassed the vast
-majority of private keys on the
-web~\cite{key-sharing,when-https-meets-cdn}.
-%
-This has significant implications on the trust model of the PKI and the
-web writ large: today's CDNs could arbitrarily impersonate any of their
-customers---and recall that virtually all of the most popular websites
-use one or more CDNs~\cite{key-sharing}.
-
-Even if one were to assume a trustworthy CDN, the need to store
-sensitive key materials on edge servers introduces significant
-challenges.
-%
-CDNs have historically relied on a combination of their own physical
-deployments and deployment within third-party networks, such as college
-campuses.
-%
-To protect their customers' keys, some CDNs refuse to deploy
-HTTPS content anywhere but at the data centers they have full physical
-control over~\cite{securing-cdns}.
-%
-However, as the web moves towards HTTPS-everywhere, this means that
-such CDNs can no longer make as much use out of third-party networks.
-%
-In short, without additional protections for private and session keys
-on edge servers, the move towards HTTPS-everywhere represents an
-\emph{existential threat} to edge-network services.
-
-% }}}
-
-\subsection{Our Goals} % {{{
-\label{sec:goals}
-
-At a high level, our goal is to maintain all of the core properties of
-a CDN---low latency, key management, and resilience to DDoS and
-targeted attacks---without having to expose customers' keys or client's
-sensitive information, and without requiring massive code changes from
-their customers.
-%
-We distill our overarching goal down to five specifics:
-
-\vspace*{-0.3\baselineskip}
-\begin{enumerate}
-\setlength{\itemsep}{0pt}
-	\item \textbf{Protect private keys:} Support HTTPS, but without
-		exposing the private keys corresponding to the certificate's
-		public key to any edge server.
-	\item \textbf{Protect session keys:} Once a connection is
-		established, do not expose the ephemeral session keys (nor the
-		sensitive material for session resumption) to any edge server.
-	\item \textbf{Secure web-application firewalls:} Support
-		edge-server-side WAFs, but without leaking plaintext messages
-		to the server.
-	\item \textbf{Support multi-tenancy:} Be able to host
-		multiple customers on a single machine (or even the same web
-		server process), but with strong isolation between them.
-	\item \textbf{Support legacy customer applications:} Support all of
-		the same web architectures of today, with minimal modifications
-		to or impact on customer code.
-\end{enumerate}
-\vspace*{-0.3\baselineskip}
-
-These goals are a departure from today's CDNs, which
-store all of their customers' keys (at least the session
-keys), and operate on the plaintext of the client's data.
-%
-Achieving these goals stands to improve websites' security, users'
-privacy, and also the flexibility in how edge-network services
-can be deployed.

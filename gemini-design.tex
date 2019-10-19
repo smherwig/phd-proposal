@@ -1,0 +1,429 @@
+\section{Proposed Gemini Design}
+\label{sec:gemini-design}
+%
+% 1. give a 1-2 paragraph overview of the architecture
+% 2. Create a subsection for each major component of the architecture
+%       2-3 paragraph overview of component
+%       parheads (with 2-3 paragarphs of content) for each design
+%       choice/challenge/consideration.
+% I imagine each subsection will be 1-2 columns.
+%
+% Throughout, point back to the use-caes, and comment on how they influence the
+% design.
+
+The Gemini design consists of a security policy specification and a monitor
+that enforces the policy, both of which are transparent to applications.
+%
+The policy itself may aggregate rules from multiple, mutually
+distrustful parties.
+%
+A prominent feature of the policy is that it allows for private data to be pinned
+to specific trust domains, such as an organization's own machine.
+%
+The monitor manages the migration of an application's execution between domains
+as the execution attempts to access pinned data, and ensures consistency of
+resources shared between them.
+
+
+Gemini's core abstraction is a \emph{distributed container},
+where the filesystems and memory of the container may span several
+domains, with each domain potentially cloaking parts of this space from the
+others.
+%
+Each domain runs their own instance of the monitor, with the assumption that a
+domain trusts its version of the monitor, but not those of its peers.
+%
+In an environment with trusted boot, where parties can attest to trusted peer
+monitors, monitors can additionally enforce fine-grained IFC rules to detect
+incorrect behavior during an application's execution in an untrusted domain.
+
+% Probably 3 or 4 is the right number to have.
+%
+% the idea is that the goals/properties should:
+%   - be justified; what's the benefit?
+%   - provide a rubric to later evaluate against -- was Gemini able
+%     to demonstrate fulfillment of such and such property?
+%
+% As a side effect, they should also help to focus the design, so that you can
+% can say "we do things this way and not that way in order to try to meet
+% property 3".
+%    \item The organization must not proxy calls for the provider.  %(practical)
+%
+% Ideas:
+%   - something about network access
+%   - soemthing about safety, liveness, or concurrency
+%   - something about full-system
+
+In designing Gemini, we keep in mind the following goals:
+
+% TODO: need a goal of only monitoring "confined" processes.
+\begin{widelist}
+    \item \textbf{Safety:} Only code that the principal trusts, running in an
+        environment that the principal trusts, can access data that the
+        principal has pinned or tainted.
+
+    \item \textbf{Liveness:} Migration does not stop the world.
+
+    \item \textbf{Usefulness:} The majority of the application's execution must
+        take place on the provider's machine.
+\end{widelist}
+
+
+We describe the three major aspects of Gemini's design: (1) the monitor, (2)
+migration between domains, and (3) the security policy framework.
+%
+% The security policies are only interesting in the case of trusted monitors;
+% otherise the policies are simply "to access object X, migrate to machine Y.
+%
+% Thus, I would descirbe the monitor and migration first with just that simple
+% policy in mind, and then use the security policy section to describe the more
+% interesting policies that trusted hardware allows.
+
+
+\subsection{Monitors}
+%
+The monitor itself must simultaneously interpose on a process's execution while
+also ensuring consistent policy enforcement for shared resources, such as files
+and shared memory.
+%
+One approach is to base the design on full-system emulation.
+%
+However, full-system emulation is slow, as it needlessly emulates
+monitored and unmonitored processes alike.
+%
+Moreover, previous
+systems~\cite{whole-system-simulation,panorama,demand-emulation} that use this
+technique in conjunction with taint tracking suffer from a lack of system
+introspection, as well as the explosion of taint into kernel space.
+%
+Gemini's design instead takes a hybrid approach that splits the monitor between a
+per-process monitor and a system monitor.
+
+
+
+\parhead{Process monitor}
+%
+The process monitor is an emulator that instruments and dispatches the
+application's code.
+%
+The emulator instruments instructions, such as
+loads and stores, that propagate taint, as well as interposes on
+system calls that transfer tainted data.
+%
+The process monitor tracks the propagation of taint in the process's
+memory space using shadowed pages inaccessible to the application.
+
+
+\parhead{System monitor}
+The system monitor keeps a system-wide account of tainted resources,
+ensures that processes are run in emulation mode when they have access to
+tainted data, and applies policy checks over tainted data, such as when data is
+emitted to the network.
+%
+To track taint through storage, the system monitor applies persistent
+taint tags to files.
+%
+% Netlabel, CIPSO IETF draft
+To transfer tainted buffers over the network, the system monitor embeds taint
+tags in outging packets and processes tags from incoming packets.
+%
+In the case of untrusted boot, the policy that the system monitor enforces is
+fairly simple: if a process attempts to access a page or a file pinned to
+another domain, the monitor initiates a migration of execution to that domain.
+
+
+\subsection{Execution migration}
+
+Gemini migrates at the thread-level.
+%
+When a thread attempts to access a resource pinned to a target domain,
+the system monitor suspends the thread, and transfers the
+thread's execution to the target.
+%
+The thread runs on the target until it satisfies a \emph{migration condition},
+and then migrates back to the source.
+%
+On return, the source updates the thread's context and the process's memory
+space, and resumes the thread.
+
+
+\parhead{Distributed Shared Memory}
+%
+Similar to prior systems, Gemini integrates distributed shared memory (DSM) and
+virtual memory management.
+%
+Each domain runs a DSM manager and page server that cooperates with the VM
+manager to service page faults.
+%
+The VM manager refers remote memory access to the DSM manager,
+which in turn satifies the request using a coherence protocol with the peer
+domain's page server.
+%
+Thus, a page fault to local memory is indistinguishable from a page fault to
+remote memory.
+
+
+\parhead{Distributed Filesystem}
+%
+Gemini maintains a consistent filesystem view among migrated and
+non-migrated processes by allowing a thread's file descriptor table on the
+target to proxy calls to a fileserver back on the source.
+%
+This has additional benefit of obviating the need to replicate or update
+public files during migration.
+%
+Domains may pin file descriptors, such that the descriptor can only be used
+in that domain.
+%
+Likewise, if the target thread writes tainted data to a remote descriptor, the
+associated file transfers to, and becomes pinned by, the target; any processes
+on source with that file open have subsequent operations on that descriptor
+proxied to the target.
+
+
+\parhead{Example: Loading a private key}
+%
+In Figure~\ref{fig:loading-key} we diagram a provider's service (source) loading
+a private key pinned to the organization's machine (target).
+%
+We assume that the service is proprietary, and thus the provider
+pins the custom portions of the software.
+%
+We assume that the service's cryptographic library is public, however.
+
+
+In step 1, the source's monitor detects that one of the service's threads
+attempts to open the cloaked key file.
+%
+The monitor suspends all the threads in the process, and transfers a minimal
+subset of the thread's execution state to the target.
+%
+In step 2, the target monitor constructs a skeleton process and
+restores the source's thread.
+%
+In restoring the thread, the target ensures that the only executable mappings
+in the process correspond to the cryptographic library.
+%
+Likewise, during execution, the target's monitor will ensure that thread does
+not create new executable mappings.
+
+
+In step 3, the target resumes the thread in the process monitor's emulator,
+tracking the propagation of the private key's data by adding taint tags to
+the shadow table.
+%
+If the thread tries to access a page that the source has not yet tranferred,
+the access generates a page fault.
+%
+The target's monitor traps such faults and redirects them to the source, which
+responds with the faulted page.
+
+
+When the process monitor detects a stopping condition, it notifies the
+system monitor to suspend the thread and migrate back to the source machine.
+%
+The stopping condition is policy-specific; examples include the process
+performing $n$ consecutive instructions without tainted
+data, or the instruction pointer referencing source-cloaked data or code.
+%
+In step 4, the source's system monitor updates it's memory mappings based on
+the target's exeuction, and sets page table attributes to indicate which pages
+are now cloaked by the target.
+%
+As with the migration to the target, the source must also perform consistency
+checks.
+%
+The source then resumes the threads.
+
+
+\begin{figure}[t]
+	\centering
+    \includegraphics[width=0.5\textwidth]{figs/loading-key}
+	%
+    \caption{A webserver on the service provider's domain (source) loading a
+    private key pinned to the organization's domain (target).
+    %
+    Cloaked virtual memory areas (VMAs) an files are in gray, and pinned
+    resources are in red.
+    }
+	%
+	\label{fig:loading-key}
+\end{figure}
+
+
+\parhead{Example: Signing operation}
+%
+Migration for a signing operation is similar to that for loading a
+private key.
+%
+For signing, however, the source's monitor detects an 
+access attempt to pinned data via a page fault for the cloaked memory page
+storing the key.
+%
+When the thread, executing on the target, computes the signature, the target's
+monitor must also specify a \emph{declassification gate} to remove the taint that
+would otherwise pin the signature to the target.
+%
+In this example, the gate is a ``hook"  for the cryptographic library's
+signing function.
+%
+With declassification gates, the target must guard against attempts by the source to
+hijack declassification.
+%
+For instance, the source could arrange for the thread to be restored with a
+starting point that invokes \texttt{sign(0, key}), thereby declassifying the key.
+%
+Thus, the target must properly sanitize a gate's arguments.
+
+
+\parhead{Limitations}
+% TODO:DSM and test-and-set?
+%
+A disadvantage of the integration between VM and DSM is that the unit of access
+adn locking are contrainted to be a page.
+%
+If multiple data structures are allocated on the same page, then this constaint
+can lead to \emph{false sharing}, wherein distinct private data structures
+appear shared due to colocation on the same page.
+%
+A similar issues exists with applying taint tags at the page granularity.
+
+
+Gemini is also susceptible to a form of deadlock whereby, during the course of
+a thread's execution, the thread reaches an instruction that accesses two
+pieces of data, each pinned to a separate domain.
+%
+We simply specify that Gemini must detect such occurences and abort.
+
+
+In our uses-cases, this form of deadlock is either non-existent or unusual, as
+only a single party has pinned data, or the pinned data of each party is used 
+in logically different portions of the code (e.g., an email provider pinning
+proprietary spam rules, and an organization pinning a private key).
+%
+A more plausible deadlock scenario is a server that supports multiple tenants
+and uses a global data structure to manage the (pinned) keys across all
+tenants.
+%
+In such cases, the application may need to be patched to correct the offending
+memory layout.
+%
+In the general case, the problem is one of secure multi-party computation, and
+an interesting area of future work is for the emulator to emit garbaled
+circuits when it detects such events.
+
+
+\subsection{Security policies}
+% Talk about in "real" terms, what security properties the organization gains,
+% such as ability to revoke their key, such that the CDN never sends data that
+% isn't endorsed by the organization, and so on, and how these properties are
+% immunte the CDN laundering taint.
+
+There are two types of security policies: those that specify a migration to
+and those that impose ``firewall" rules.
+%
+The firewall rules allow for a stateful, tag-aware, packet filter.
+
+We now collect the correctness assertions common to these three use-cases.
+%
+The central premise is that, while the organization may be unable to
+comprehensively validate the correctness of the untrusted service, it can, to
+varying degrees, specify a model of incorrect behavior that is independent of the
+application's code, and instead based on the flow of the organization's data
+within that service. 
+
+\begin{enumerate}
+    \item The organization's private key(s) must not be leaked to untrusted parties.
+
+    \item If the organization's data (e.g., webpage, DNS records, emails) leaves the
+        service, it must be sent over a flow endorsed by the organization's private
+        key.
+
+    \item Any flow endorsed by the organization's private key must only send
+        data originating from the organization.
+
+    \item If the organization's data leaves the service, it must not have been
+        modified.
+
+    \item In the case of a distributed service, the organization's data can
+        traverse other nodes that  guarantee the above properties.
+\end{enumerate}
+
+Assertions (3) and (4) are impractically strict: web and mail servers will add
+headers to the outgoing content, and may further modify the content through a
+legitimate transformation, such as compression or image transcoding.
+%
+Thus, these assertions may give rise to additional qualificaitons.
+%
+For instance, to allow for server-provided headers, assertion (3) may instead
+be specified as: ``Any flow endorsed by the organization's private key must
+\emph{eventually} send data originating from the organization."
+
+
+\parhead{Example: HTTPS Server}
+%
+Execution migrates to the organization, which produces an RSA signature, and
+then execution migrates back to the CDN\@.
+%
+Before migrating back to the CDN, the organization assigns a taint tag to the
+signature, which is also sent to the CDN\@.
+%
+The CDN sends the signature to a web client as part of the ServerHello TLS
+message.
+%
+When the CDN's monitor sends the signature, it marks the corresponding socket
+with the tag.
+
+
+If the client requests a web page that is not in the server's cache, the server
+makes an HTTPS request to the organization's origin server and downloads the
+page.
+%
+The CDN's monitor detects that the request is made to the origin and tags the
+downloaded page to indicate its provenance (alternatively, the origin server
+could embed these tags in its response packets).
+%
+When the CDN sends the page to the client over subsequent TLS frames the
+monitor checks that these frames include data that is tagged as originating
+from the organization. 
+
+
+The TLS frames will contain metadata fields (sequence numbers, etc.),
+that are not tagged as belonging to the organization.
+%
+Thus, the monitor uses an application-layer parser to parse the
+messages, and consults with the policy regarding which tags should be on
+which fields.
+%
+If simple temporal logic is fine (not labeled until labeled), then the monitor
+does need the underlying plaintext; otherwise, the monitor must further impose
+an implementation requirements on the application; namely, the use of
+kernel-TLS\@.
+
+
+\begin{figure}[t]
+	\centering
+    \includegraphics[width=0.5\textwidth]{figs/https-flowchart}
+	%
+    \caption{The evalution of taint-based firewall rules for an HTTPS proxy
+    service.}
+	%
+	\label{fig:https-flowchart}
+\end{figure}
+
+
+\parhead{Example: DNS Authoritative Server}
+%
+The firewall rules for a DNSSEC-enabled server inspects incoming packets, and keep a
+running mapping of the requests's ID to whether the request requires DNSSEC
+(the request's \texttt{DO} bit).
+%
+When sending responses, the policy  parses the response's ID and retrieves the
+corresponding \texttt{DO} value from the mapping.
+%
+If the mapping indicates that the request set \texttt{DO}, the firewall
+verifies that the response includes an \texttt{RRSIG} record tagged with the
+organization's private key.
+%
+Regardless, the firewall verfiies that the remaining response data is tagged as originating
+from the organization.
