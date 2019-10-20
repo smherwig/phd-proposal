@@ -11,7 +11,7 @@ system.
 However, the assumption no longer holds for service models that involve
 multiple distrustful parties.
 %
-A prime example is an organizations that outsources its services to untrusted
+A prime example is an organization that outsources its services to untrusted
 third parties, such as content delivery networks and mail providers.
 %
 Outsourcing is an attractive way for an organization to reduce costs,
@@ -45,7 +45,7 @@ supported.
 
 
 % this is too specific
-My thesis is simple:
+My thesis is:
 \begin{displayquote}
     It is possible to run legacy application binaries with confidentiality and
     integrity guarantees that reflect the potentially multi-lateral trust model
@@ -98,15 +98,15 @@ application trustworthiness as policy concerns.
 %
 Gemini is an execution environment that offers two complementary abstractions:
 (1) \emph{distributed container}, where organizations may pin sensitive data to
-domains (such as a host) that they trust; a thread's exeuction migrates to the
+domains (such as a host) that they trust; a thread's execution migrates to the
 trusted domain when computing with the sensitive data or any sensitive data
 derived from it, and (2) \emph{policy monitors}---modules that an organization
-may install in a trusted environment that enforce expected behavior of
+may install in a trusted environment that enforce expected behavior of an
 untrusted application.
 %
 A key feature of policy monitors is that the policies express a specification
-for program correctness that the monitor dyanmically enforces with fine-grain
-information flow tracking.
+for program correctness base on dynamically trackig information flows, which
+the monitor enforces at run-time.
 
 This proposal is organized as follows:
 

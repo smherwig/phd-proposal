@@ -1,31 +1,35 @@
 \section{Background}
 \label{sec:background}
 
+There are two oraganization, which is the user
+
+% trust model
+% goal 
+
+
 
 \subsection{Problem}
 
 There are two broad flavors of outsourcing.
 %
 The first is an organization migrating their in-house service to a third-party
-deployment; the second is an organization  moving from in-house services to
+deployment; the second is an organization  migrating from in-house services to
 those offered by third party cloud service providers.
 %
-Of course, there are combinations between these two extremes, such as where
-cloud service provider must communicate with some in-house backend services of
-the organization.
-
-
+Hybrids exist between these two extremes, such as where a cloud service
+provider must communicate with the organization's, in-house, backend services.
+%
 Common examples are an organization moving their HTTPS, DNS, or email servers
 into the cloud, or contracting some other party to run their own
 implementations of these services on the organization's behalf.
 %
-Note that, nowadays, all of these core application-level protocols use public
-key cryptopraphy to ensure either the integrity and/or confidentiality of the
-applciation's underlying content.
+Nowadays, all of these core application-level protocols use public key
+cryptopraphy to ensure the integrity, authenticity, and/or confidentiality of
+the application's content.
 
 
-Consider an organization that outsources its web hosting to a third-party,
-such as a content delivery network (CDN)\@.
+As a concrete example, consider an organization that outsources its web hosting
+to a a content delivery network (CDN)\@.
 %
 A CDN is a massive, global network of \emph{edge servers}, where each edge
 server acts as a reverse proxy for the organization: to
@@ -35,6 +39,9 @@ handle client requests, edge servers retrieve content from the organization's
 CDNs derive much of their utility from the fact that they have servers close to
 most clients, thereby providing low-latency responses.
 %
+Several techniques exist for routing clients to the closest edge server, but
+DNS is common, and so the CDN may also handle teh organization's DNS server.
+%
 CDNs also provide added security benefits, such as absorbing DDoS
 traffic, and filtering targeted malicious trafic, such as SQL injection and
 cross-site scripting attacks~\cite{securing-cdns}.
@@ -43,65 +50,57 @@ Virtually all of the most popular websites (and a very long tail of unpopular
 websites) use one or more CDNs to help reliably host their content.
 
 
+With these use-cases in mind, let's enumerate the security and privacy
+implications of outsourcing.
+
+
+% XXX: try to keep each implication to one meaty (3-5 sentence) paragraph.
+
 \parhead{Impersonation}
-% concern 1
-In any of either case, either the cloud infrastructure owner or the service
-provider or both gain access to the private key the customer uses for all of
-these services, and can thus perfectly impersonate the organization with
-respect that service, to the extent of arbitrarily modifying content.
-
-
-As the web moves towards HTTPS-everywhere~\cite{felt-2017-https}, organizations
-increasingly rely on CDNs to store their HTTPS certificate and the
-corresponding secret keys~\cite{key-sharing, when-https-meets-cdn}, so that
-they can accept TLS connections while maintaining low latency to clients.
 %
-This has significant implications on the trust model of the PKI and the web
-writ large: today's CDNs can arbitrarily impersonate any of their
-customer organizations.
-
-% TODO: shorten
-Traditionally, an organization signs their DNS records offline, uploads them to
-the CDN, and then uploads the DS records to the parent zone.
+In order for the provider to fulfill the service, the provider must
+have access to the application's private keys.
 %
-For convenience, though, an organization may outsource the keys and management
-to the CDN\@.
+Indeed, as the web moves towards HTTPS-everywhere~\cite{felt-2017-https},
+organizations increasingly rely on the CDN provider to store their HTTPS
+certificate and the corresponding secret keys~\cite{key-sharing,
+when-https-meets-cdn}, so that they can accept TLS connections while
+maintaining low latency to clients.
 %
-With the organization's private DNS keys online, the CDN can offer
+Even with application like DNS, where an organiation would traditionally sign
+their DNS records offline, the organization may choose to outsource the keys
+and management to the provider.
+%
+% TODO: cite cloudflare blog
+With the organization's private DNS keys online, the provider can offer
 additional services, such as greater flexibility to return geographically-based
 responses, as well as zone enumeration defenses.
-
+%
+This has significant implications on the trust model of the PKI and the web
+writ large: today's providers can arbitrarily impersonate any of their customer
+organizations.
 
 
 \parhead{Breach of Confidentiality}
-% concern 2
-There's also a breach of inherent confidentially between the clients and the
-organization, as the third party is now privy to all the usage statistics, the
-client passwords and private data, and so forth.
 %
-The third party itself might further subcontract aspects of the deployment,
-such that the total exposure is not appearnt to the client or organization.
-
-
-As the CDN may have a rich backend of distributed caches, the organization
-expects that if data flows over a non-endorsed stream, it flows only to
-machines owned by the CDN that attest to the same data flow properties. 
+With the provider acting a man-in-the-middle between the
+organization and its clients, the provider is privy to the client's private
+data, such as passwords, cookies, and personal content, as well as statistics
+for client profiling.
 %
-Similarly, an email server may use a third-party virus or spam scanning
-service.
-
+The provider might further subcontract aspects of the deployment (as with an
+email provider using another provider for virus and spam scanning), such that
+the total data exposure is not apparant to the client or organization.
 
 
 \parhead{Latent Trust Assumptions}
-% concern 3
-An addition concern is hybrid deployments, where some processing occurs on the
-third-party, and some on the organization's site.
 %
-Let’s assume that an organization has migrated its front- end business
-applications to a cloud service provider, but that its database remains within
-the organization’s network. 
+Assume a hybrid deployment where the organization has migrated its front-end
+business applications to a cloud service provider, but that the application's
+database remains within the organization’s network. 
 %
-Suppose that the several internal applications also use the database. 
+Suppose further that the the organization has in-house applications that
+continue to use the database. 
 %
 Before migrating to the cloud, the database could trust that any connections to
 it were from benign, internal tools; now, the organization must retrofit a
@@ -134,6 +133,7 @@ potentially malacious or devious queries from the cloud front-end.
 
 \parhead{Legal and Regulatory Restrictions}
 % concern 5: legal, policy restrictions
+% talk about akamai not hosting content on thrid parties.
 
 
 \subsection{Trust Model}
@@ -164,14 +164,13 @@ potentially malacious or devious queries from the cloud front-end.
 \end{table}
 
 We describe an idealized trust model from the perspective of an
-organization that uses a cloud service that requires the organization's
+organization that uses a cloud service provider that requires the organization's
 sensitive data.
-
-
-For simplicity, we assume that the service provider (henceforth, provider) and
-the cloud machine owner are the same party, and that the provider administers
-all software on the machine, including any system software, such as the
-operating system, as well as the application.
+%
+For simplicity, we assume that the provider and the cloud machine owner are the
+same party, and that the provider administers all software on the machine,
+including any system software, such as the operating system, as well as the
+application.
 %
 An untrusted provider may deviate arbitrarily from the stated service, but
 remains subject to standard cryptographic assumptions.
@@ -182,6 +181,7 @@ and, in particular, may actively try to leak sensitive data.
 We assume, however, that the software is bug-free, and thus the model omits
 external actors, such as a remote attacker.
 %
+% TODO: what about components that proprieatry to the organization?
 The application may be composed entirely of open-source components, private
 components that are proprietary to the provider, or some combination thereof.
 %
@@ -213,6 +213,7 @@ the latter of which is both outside of our trust model and mitigated with
 existing sandbox techniques.
 
 
+% In the figure, use colors to show the models you treat in the thesis
 \parhead{Models we focus on}
 In model 5, the organization trusts the software, but does not trust the
 provider to run it faithfully, and thus uses one of various
