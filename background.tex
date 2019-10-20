@@ -12,19 +12,19 @@ There are two oraganization, which is the user
 
 There are two broad flavors of outsourcing.
 %
-The first is an organization migrating their in-house service to a third-party
-deployment; the second is an organization  migrating from in-house services to
-those offered by third party cloud service providers.
+The first, \emph{cloud hosting}, is an organization migrating their in-house
+service to a third-party deployment; the second is an organization  migrating
+from in-house services to those offered by third party \emph{cloud services}.
 %
 Hybrids exist between these two extremes, such as where a cloud service
 provider must communicate with the organization's, in-house, backend services.
 %
-Common examples are an organization moving their HTTPS, DNS, or email servers
-into the cloud, or contracting some other party to run their own
+Common outsourcing examples are an organization moving its HTTPS, DNS, or
+email servers into the cloud, or contracting some other party to run its own
 implementations of these services on the organization's behalf.
 %
 Nowadays, all of these core application-level protocols use public key
-cryptopraphy to ensure the integrity, authenticity, and/or confidentiality of
+cryptography to ensure the integrity, authenticity, and/or confidentiality of
 the application's content.
 
 
@@ -40,7 +40,7 @@ CDNs derive much of their utility from the fact that they have servers close to
 most clients, thereby providing low-latency responses.
 %
 Several techniques exist for routing clients to the closest edge server, but
-DNS is common, and so the CDN may also handle teh organization's DNS server.
+DNS is common, and so the CDN may also handle the organization's DNS server.
 %
 CDNs also provide added security benefits, such as absorbing DDoS
 traffic, and filtering targeted malicious trafic, such as SQL injection and
@@ -54,20 +54,20 @@ With these use-cases in mind, let's enumerate the security and privacy
 implications of outsourcing.
 
 
-% XXX: try to keep each implication to one meaty (3-5 sentence) paragraph.
-
+% XXX: try to keep each implication to one meaty paragraph.
 \parhead{Impersonation}
+% byzantine
 %
 In order for the provider to fulfill the service, the provider must
 have access to the application's private keys.
 %
 Indeed, as the web moves towards HTTPS-everywhere~\cite{felt-2017-https},
-organizations increasingly rely on the CDN provider to store their HTTPS
+organizations increasingly rely on CDN providers to store their HTTPS
 certificate and the corresponding secret keys~\cite{key-sharing,
 when-https-meets-cdn}, so that they can accept TLS connections while
 maintaining low latency to clients.
 %
-Even with application like DNS, where an organiation would traditionally sign
+Even with application like DNS, where an organization would traditionally sign
 their DNS records offline, the organization may choose to outsource the keys
 and management to the provider.
 %
@@ -82,6 +82,7 @@ organizations.
 
 
 \parhead{Breach of Confidentiality}
+% Honest but curious
 %
 With the provider acting a man-in-the-middle between the
 organization and its clients, the provider is privy to the client's private
@@ -90,7 +91,20 @@ for client profiling.
 %
 The provider might further subcontract aspects of the deployment (as with an
 email provider using another provider for virus and spam scanning), such that
-the total data exposure is not apparant to the client or organization.
+the the client and organization are unaware of the extent of ther data
+exposure.
+
+
+\parhead{Correctness}
+% concern 4: correctess: e.g., DNSSEC providers not actually providing DNSSEC.
+% Negligent (also, a supertet of the byzantine and honest but curious)
+%
+By outsourcing a service, the organization no longer has guarantees that the
+provider adheres to the expected service.
+%
+For instance, in the case of DNS hosting, a prior study found that 31\% of
+domains that claim to support DNSSEC fail to publish all relevant records
+required for validation.
 
 
 \parhead{Latent Trust Assumptions}
@@ -103,37 +117,33 @@ Suppose further that the the organization has in-house applications that
 continue to use the database. 
 %
 Before migrating to the cloud, the database could trust that any connections to
-it were from benign, internal tools; now, the organization must retrofit a
-firewall and privilege model onto the database in order to guard against
-potentially malacious or devious queries from the cloud front-end.
-%Alternatively, policy compliance can rely on fine-grained access-control
-%support in the underlying database management system (DBMS).  
-%%
-%Unfortunately, the extent of the support and the language used to express the
-%policies varies across DBMSs.  
-%%
-%For instance, PostreSQL offers row security policies that restrict, on a
-%per-user basis, which rows can be returns by queries, or inserted, updated, or
-%deleted by data modification commands.  
-%%
-%In contrast, MySQL offers plugins for application-level firewalls and 
-%data masking and de-indentification.
-%%
-%Often, to achieve a fine-granularity, these features must be encompassed
-%through virtual tables.
-%%
-%For many NoSQL databases, such as MongoDB, the underlying desing assumption is
-%that the database operates on localhost, with trusted input, and the
-%database itself offers does not offer a permission system.
-
-
-\parhead{Correctness}
-% concern 4: correcntess: e.g., DNSSEC providers not actually providing DNSSEC.
+it were from benign, internal tools; now, the organization must guard against
+potentially malicious or devious queries from the cloud front-end.
 
 
 \parhead{Legal and Regulatory Restrictions}
-% concern 5: legal, policy restrictions
+% concern 5: legal, policy compliance, ...restrictions
 % talk about akamai not hosting content on thrid parties.
+% talk about HIPPA (as with emails)
+%
+Even if one were to assume a trustworthy CDN, the need to store
+sensitive key materials on edge servers introduces significant
+challenges.
+%
+CDNs have historically relied on a combination of their own physical
+deployments and deployment within third-party networks, such as college
+campuses.
+%
+To protect their customers' keys, some CDNs refuse to deploy
+HTTPS content anywhere but at the data centers they have full physical
+control over~\cite{securing-cdns}.
+%
+However, as the web moves towards HTTPS-everywhere, this means that
+such CDNs can no longer make as much use out of third-party networks.
+%
+In short, without additional protections for private and session keys
+on edge servers, the move towards HTTPS-everywhere represents an
+\emph{existential threat} to edge-network services.
 
 
 \subsection{Trust Model}
