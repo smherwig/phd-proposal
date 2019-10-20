@@ -1,35 +1,39 @@
 \section{Introduction}
 \label{sec:intro}
 
-Software is often written assuming monolithic trust assumptions, meaning that
+Software is often written assuming monolithic trust assumptions, whereby
 the user tacitly trusts both the software and the environment in which it runs.
 %
-This assumption worked fine in the past, when an organization developed the
-software, owned the infrastucture, and administered all parts of the resultant
+This assumption is valid when the user, say an organization, develops the
+software, owns the infrastucture, and administers all parts of the resultant
 system.
 %
-However, the trust assumption must be updated as new deployment scenarios bcome available.
+However, the assumption no longer holds for service models that involve
+multiple distrustful parties.
 %
 A prime example is an organizations that outsources its services to untrusted
 third parties, such as content delivery networks and mail providers.
 %
-Outsourcing is an attractive way for an organization to to reduce costs,
+Outsourcing is an attractive way for an organization to reduce costs,
 increase availabilty, or gain additional protections inherent to these hosting
 environments.
 %
-Unfortunately, such a deployment poses a security tradeoff: the third party
+Unfortunately, outsourcing poses a security tradeoff: the third party
 providers that offer or deploy these services potentially gain access to
-sensitive information about the organization and its clients, and the
-organization may no longer have insight into what specific software is
-implementing the service.
+sensitive information about the organization and its clients.   
+%
+Moreover, in cases where the organization abandons in-house services in favor
+of a provider's software suite, the organization may no longer have insight
+into what software is even implementing the service.
 
 
 % TODO: maybe expand this paragraph a bit
 %
 % XXX: the problem is larger than just running trusted software on an untrusted
 % host.
-Running applications with strong security and privacy guarantees on untrusted
-third parties is a large and active area of research; it spans uses of
+Running trusted applications with strong security and privacy guarantees on untrusted
+third parties, and its dual, running untrusted applications within a
+trusted environment, is a large and active area of research; it spans uses of
 trusted hardware and functional encryption that seek to continue hosting
 applications completely on third parties, to (re-)designing applications and
 protocols so as to delegate trust, preserve privacy, or otherwise partition
@@ -41,11 +45,11 @@ supported.
 
 
 % this is too specific
-My thesis is:
+My thesis is simple:
 \begin{displayquote}
     It is possible to run legacy application binaries with confidentiality and
-    integrity guarantees that reflect the trust model in which the application
-    is deployed.
+    integrity guarantees that reflect the potentially multi-lateral trust model
+    in which the application is deployed.
 \end{displayquote}
 % Running unmodified, legacy binaries that have monolithic trust assumptions in
 % environments where such assumptions do not hold.  
@@ -55,17 +59,20 @@ My thesis is:
 % without leaking private data to the provider and with guarantees that the
 % provider does not deviate from the service's expected behavior.
 
+
+The term \emph{multi-lateral trust model} means that the trust model may
+encompass the concerns of multiple parties.
+%
 The constraint of running unmodified, legacy services implies that the
 enforcement of such security, privacy, and correctness guarantees is the
 responsibilty of the service's run-time execution environment. 
 %
 Since the execution environment is transparent to the application, the insight
 is that it may be modified, partitioned, and distributed across domains of
-varying trustworthiness, so as to reflect the security goals of the
-organization.
+varying trustworthiness, so as to reflect the security goals.
 
 
-The design space is influenced by two factors: the presence of trusted
+The design space is strongly influenced by two factors: the presence of trusted
 hardware, and the organization's trust in the application.
 %
 % Untrusted means the application may deviate arbitrarily from its stated
@@ -73,11 +80,12 @@ hardware, and the organization's trust in the application.
 % actively try to leak sensitive data.
 %
 In my preliminary work, conclaves, I assume the presence of Intel SGX hardware
-enclaves and that the content owners trust the service.
+enclaves and that the organization trusts the service.
 %
 Conclaves extends prior work on SGX-based library operating systems (libOS) by
-modifying a libOS to support running a broader set of legacy services
-within enclaves: namely, multi-process, shared resource, applications.
+modifying a libOS to support a broader set of legacy services: namely,
+multi-process, shared resource, applications.
+
 %
 % Specifically, conclaves is distributed system reminiscent of a microkernel,
 % where each kernel service (for instance, a filesystem or shared memory)
@@ -85,37 +93,20 @@ within enclaves: namely, multi-process, shared resource, applications.
 % among the application’s processes.
 
 
-My proposed work, Gemini, makes assumptions about the availability of trusted
-hardware and the trustworthiness of the application into policy specifications
-on the part of the organization.
+My proposed work, Gemini, consigns trusted hardware availability and
+application trustworthiness as policy concerns.
 %
 Gemini is an execution environment that offers two complementary abstractions:
-(1) \emph{distributed container}, where organizations may pin sensitive data to hosts
-that they trust; a thread's exeuction migrates to the trusted host when
-computing with the sensitive data or any sensitive data derived from it, and
-(2) \emph{policy monitors}, which are modules that an organization may installed in a
-trusted environment that enforce expected behavior of untrusted application.
+(1) \emph{distributed container}, where organizations may pin sensitive data to
+domains (such as a host) that they trust; a thread's exeuction migrates to the
+trusted domain when computing with the sensitive data or any sensitive data
+derived from it, and (2) \emph{policy monitors}---modules that an organization
+may install in a trusted environment that enforce expected behavior of
+untrusted application.
 %
-A key feature of policy monitors is that the policies enforce fine-grain
-information flows.
-
-
-To demonstrate this thesis, I make the following contributions:
+A key feature of policy monitors is that the policies express a specification
+for program correctness that the monitor dyanmically enforces with fine-grain
+information flow tracking.
 
 This proposal is organized as follows:
-
-% I evaluate my work by demonstrating correctness, measuring performance
-% overheads, and measuring the “closeness” of the emergent protocols to proposed
-% alternatives. I focus on the use cases of deploying TLS-enabled web services on
-% content delivery networks (CDNs) without granting the CDN operator the private
-% TLS key, as well as running database applications on untrusted third parties
-% while maintaining the privacy of the database content.
-
-
-% The conclaves
-% paper is my "prior" work for this thesis, and the new work deals with migrating
-% processes across trust domains (the unfinished work of a previous graduate
-% student).
-
-
 
