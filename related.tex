@@ -7,19 +7,18 @@
 \subsection{Trusted Execution Environments}
 
 Trusted execution environments (TEEs) provide hardware protections for running
-small trusted portions of code with guarantees of confidentiality and
-integrity.  Applications can be guaranteed that code executed within the
-TEE was run correctly and that any secrets generated during execution
-will remain safely within it as well.
+trusted portions of code with guarantees of confidentiality and integrity.  
+%
+Applications can be guaranteed that code executed within the TEE was run
+correctly and that any secrets generated during execution will remain safely
+within it as well.
 
 A wide range of TEEs are available today, with varying functionalities.
-We focus on Intel's Software Guard Extensions (SGX) environment,
-but note that any TEE with similar functionality discussed here and
-\S\ref{sec:threatmodel}
-% in the threat model 
-% (such as ARM TrustZone~\cite{trustzone}) 
+%
+We focus on Intel's Software Guard Extensions (SGX) environment, and AMD's
+Secure Encrypted Virtualization, the two TEE implementations for the x86\_64
+architecture.
 
-would also be usable.
 
 \parhead{Intel SGX Overview}
 %
@@ -64,7 +63,7 @@ proxied through the untrusted OS as well.
 AMD Memory Encryption Technology addresses two different classes of attacks:
 system software level and physical access attacks.  
 %
-System software level attacks include attacks by the hypvisor or co-reseident
+System software level attacks include attacks by the hypervisor or co-reseident
 VMs to analyze the guest VM memory space.
 %
 Physical attacks include hot memory I/O attacks or cold boot attacks.
@@ -77,7 +76,7 @@ the System on Chip (SoC) that transparently encrypts and decrypts the data
 when it leaves or enters the SoC, respectively.
 %
 AMD proposes two main features based on Memory Encryption Technology: (1)
-Secure Memory Encryption (SME) and (2) Secure Encryption Virtualizaiotn (SEV)\@.
+Secure Memory Encryption (SME) and (2) Secure Encryption Virtualization (SEV)\@.
 %
 Both SEV and SME are managed by the OS or hypervisor, and no application software
 changes are needed.
@@ -92,8 +91,11 @@ Encryption key management, such as generating, storing, and delivering the
 keys, are carried out by the AMD secure processor and the encryption keys are kept
 hidden from untrusted parts of the platform.
 %
-The AMD secure processor utilizes a 32-bit ARM Cortex A5, and uses its memory
-an storage while executing a kernel that is signed by AMD\@.
+%The AMD secure processor utilizes a 32-bit ARM Cortex A5, and uses its memory
+%an storage while executing a kernel that is signed by AMD\@.
+%
+The secure processor provides a set of APIs for provisioning and managing
+the platform in the cloud.
 
 
 % Secure Memory Encryption (SME), and 
@@ -104,13 +106,13 @@ SEM is the security feature that addresses physical access atacks.
 SEM is an x86 instruction set extension introduced by AMD for page-granular
 memory encryption support using a single ephemeral key.
 %
-The AMD secure processor randomly generates the key
-and loads it into the meory controller at boot time.
+The AMD secure processor randomly generates the key and loads it into the
+memory controller at boot time.
 %
 The OS is able to leverage the SME by setting a bit in the x86 page table (the
 en\emph{C}rypted, or \emph{C-bit}).
 %
-When the C-bit is set, accss to that memory page is directed to the AMD Memory
+When the C-bit is set, access to that memory page is directed to the AMD Memory
 Encryption Engine.
 %
 In the SME design, all devices can access the encrypted pages through DMA\@.
@@ -133,9 +135,9 @@ When code and data arrive into the SoC, SEV tags all of the code and data
 associated with the guest VM in the cache and limits access only to the tag's
 owner VM.
 %
-Under SEV, the ASID field in the page table is used as the key index that
-identifies which encryption key is used to encrypt and decrypt the memory
-traffic associated with that VM.
+%Under SEV, the ASID field in the page table is used as the key index that
+%identifies which encryption key is used to encrypt and decrypt the memory
+%traffic associated with that VM.
 %
 SEV-enabled VMs can control their own C-bit for memory pages they want
 encrypted.
@@ -143,26 +145,26 @@ encrypted.
 
 % Attestation and Provisioning
 %------------------------------
-The AMD secure processor provides a set of APIs for provisioning and managing
-the platform in the cloud.
+%The AMD secure processor provides a set of APIs for provisioning and managing
+%the platform in the cloud.
 %
-The hypervisor's SEV driver can invoke these APIs.
+%The hypervisor's SEV driver can invoke these APIs.
 %
-In the SEV architectures, a guest owner manages her guest secret and generates
-the policies for VM migration of debugging.
+%In the SEV architectures, a guest owner manages her guest secret and generates
+%the policies for VM migration of debugging.
+%%
+%The Diffie-Hellman key exchange protocol is used between the guest owner and the
+%AMD secure processor to open a channel between the guest owner and the AMD
+%secure processor; the guest owner is able to authenticate the secure
+%processor and exchange information to set up the protected VM.
+%%
+%The guest owner can set a policy where certain pages are private and others
+%shared; if shared, the hypervisor can read it in plain text.
 %
-The Diffie-Hellman key exchange protocol is used between the guest owner and the
-AMD secure processor to open a channel between the guest owner and the AMD
-secure processor; the guest owner is able to authenticate the secure
-processor and exchange information to set up the protected VM.
 %
-The guest owner can set a policy where certain pages are private and others
-shared; if shared, the hypervisor can read it in plain text.
-
-
-SEV may be used in conjunction with SME.  Under this scenario, each SEV-enabled
-VM controls its own encryption via the C-bit and the host page tables control
-the encryption for shared memory.
+%SEV may be used in conjunction with SME.  Under this scenario, each SEV-enabled
+%VM controls its own encryption via the C-bit and the host page tables control
+%the encryption for shared memory.
 
 
 \parhead{Attacks}
@@ -188,10 +190,6 @@ attacks \cite{sgx-patch, canella2018systematic, weisse2018foreshadow}.
 There is also ongoing research to address both speculative execution as well as
 other cache-based side-channel attacks on SGX and in general
 \cite{yan2018invisispec, oleksenko2018varys, canella2018systematic, shih2017t}.
-%
-We consider protections against such side-channel attacks to be outside of the
-scope of this work and rely on these defenses.
-
 
 % TODO: add paragraph or two about attacks on SEV.
 
@@ -224,15 +222,15 @@ Moreover, they place the origin on the critical path, thereby increasing
 latency and making them more susceptible to attack.
 
 
-\subsection{TLS Solutions}
+\parhead{TLS Solutions}
 %
-Other work allows origin servers to retain ownership of their private keys by
+Other work allows the organization to retain ownership of its private keys by
 changing the server-side implementation of TLS.
 %
 SSL Splitting~\cite{ssl-splitting} leverages the fact that a TLS stream
 comprises data records and authentication records (MACs), and develops a new
-protocol in which the origin sends the authentication records and the proxy
-merges them with the data records to form the complete TLS stream.
+protocol in which the organization sends the authentication records and the
+provider merges them with the data records to form the complete TLS stream.
 %
 In essence, this implements the above HTTP solutions in TLS, and thus suffers
 from the same limitations of requiring the origin server to be on the fast
@@ -246,7 +244,7 @@ to, the proxy, but unlike SSL Splitting, Keyless SSL does not provide for
 content provider endorsement of the content the proxy serves.  
 %
 Neither SSL splitting nor Keyless SSL provides for the protection of the
-session keys from the CDN provider.
+session keys from the provider.
 
 
 \subsection{Cryptographic Solutions}
@@ -260,9 +258,10 @@ encryption~\cite{gentry2009fully, gentry2010computing, garg2016candidate}.
 FHE allows one to perform arbitrary computations on \textit{encrypted} data,
 without knowing any of the keys.  
 %
+
 However, even current state-of-the-art homomorphic encryption is much too slow
-for the performance that is required of a CDN and additionally would violate
-our goal to support legacy applications.
+for the performance that is required for our use-cases, and additionally would
+violate our goal to support legacy applications.
 
 
 Various approaches~\cite{desmoulins2018pattern,
@@ -271,8 +270,8 @@ encryption schemes to achieve functionality like deep packet inspection (DPI)
 while still maintaining the privacy of data.
 %
 In general, these approaches require changes of some sort to the endpoint(s),
-suffer from performance overheads, and do not achieve the rich and varied CDN
-features we require.
+suffer from performance overheads, and do not achieve the rich and varied
+features offered by providers.
 
 
 \subsection{Execution Environment Solutions}
