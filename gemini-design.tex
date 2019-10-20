@@ -54,21 +54,6 @@ incorrect behavior during an application's execution in an untrusted domain.
 %   - soemthing about safety, liveness, or concurrency
 %   - something about full-system
 
-In designing Gemini, we keep in mind the following goals:
-
-% TODO: need a goal of only monitoring "confined" processes.
-\begin{widelist}
-    \item \textbf{Safety:} Only code that the principal trusts, running in an
-        environment that the principal trusts, can access data that the
-        principal has pinned or tainted.
-
-    \item \textbf{Liveness:} Migration does not stop the world.
-
-    \item \textbf{Usefulness:} The majority of the application's execution must
-        take place on the provider's machine.
-\end{widelist}
-
-
 We describe the three major aspects of Gemini's design: (1) the monitor, (2)
 migration between domains, and (3) the security policy framework.
 %

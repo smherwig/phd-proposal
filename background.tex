@@ -260,23 +260,67 @@ treated as configuration details.
 
 \subsection{Goals}
 
+\subsubsection{Safety}
+
 \begin{enumerate}
-    \item \textbf{Support legacy customer applications}
-    \item \textbf{Protect private keys}
-    \item \textbf{Correctness:} Ensure that the provider is running the actual
-        service as expected.
-    \item \textbf{Support multi-tenancy}
-    \item \textbf{Usefulness:} The majority of the application's execution must
-        take place on the provider's machine.
+    \item \textbf{Protect private keys:}
+        %
+        Do not expose the organization's private keys to the provider.
+    
+    \item \textbf{Protect session keys:}
+        %
+        Once a connection is established, do not expose the ephemeral session keys (nor
+        the sensitive materail for session resumption) to the provider.
 
-    \item \textbf{Protect session keys and cookies}
 
-    \item \textbf{Performance:}
+    \item \textbf{Ensure correctness:}
+    %
+    Ensure that the provider is running the actual service as expected.
 \end{enumerate}
 
 
-%    \item \textbf{Safety:} Only code that the principal trusts, running in an
-%        environment that the principal trusts, can access data that the
-%        principal has pinned or tainted.
-%
-%    \item \textbf{Liveness:} Migration does not stop the world.
+\subsubsection{Practicality}
+
+\begin{enumerate}
+    \item \textbf{Allow configurable deployment and trust models:}
+        %
+        Solutions that depend exclusively on hardware enclaves are additionally
+        hampered by two realities.
+        %
+        First, while hardware enclaves have become more prevalant, they are by no means
+        ubiquitous; for instance, neither Intel SGX nor AMD-SEV---the two enclave
+        implementations for the x86\_64 architecture---are available on Amazon AWS\@.
+        %
+        Second, both implementations have, subsequent to their release, required
+        patches to address confidentiality-related vulnerabilities~\cite{foreshadow,
+        amd-sev-unprotected-io, severed}.
+        %
+        Based on this history, even if enclaves are available, the organization may be
+        unwilling to provision an enclave with sensitive data.
+
+
+    \item \textbf{Support legacy applications:} 
+        %
+        Support legacy binary applications; the system should not require that
+        applications be rewritten or recompiled.
+
+
+    \item \textbf{Support multi-tenancy:} 
+        %
+        For provider services that muliplex
+        across multiple organizations, the system should support multiple
+        organizations, and with strong isolation between them.
+
+
+    \item \textbf{Maintain outsourcing:}
+        %
+        Maintain the property that the provider hosts the majority of the computation,
+        and avoid degenerate solutions that defeat the benefits of outsourcing by
+        transferring hosting responsbilities back to the organization.
+
+
+    \item \textbf{Maintain performance:}
+        %
+        Ideally, the performance of the system is similar to that of the vanilla
+        system.
+\end{enumerate}
