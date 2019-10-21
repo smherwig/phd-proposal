@@ -11,7 +11,7 @@ trusted portions of code with guarantees of confidentiality and integrity.
 Applications can be guaranteed that code executed within the TEE was run
 correctly and that any secrets generated during execution will remain safely
 within it as well.
-
+%
 A wide range of TEEs are available today, with varying functionalities.
 %
 We focus on Intel's Software Guard Extensions (SGX) environment, and AMD's
@@ -49,121 +49,40 @@ sgx_sealing}.
 SGX also provides such features as trusted time and monotonic counters
 \cite{sgx-linux-sdk,sgx-trusted-time}.  
 %
-However, an enclave currently has no access to networking functionality itself,
-so it must rely on the untrusted application for all network interactions.  
-%
-In fact, enclaves are prohibited from making any system calls, so these must be
+However, enclaves are prohibited from making any system calls, so these must be
 proxied through the untrusted OS as well.
 
+
+% keep to two paragraphs
 \parhead{AMD-SEV Overview}
 %
-% Threat Model
-%%--------------------
-AMD Memory Encryption Technology addresses two different classes of attacks:
-system software level and physical access attacks.  
+Whereas Intel SGX guards fine-grained units of execution, AMD's Secure
+Encryped Virtualization (SEV) is roughly the equivalent of an enclaved
+virtual machine.
 %
-System software level attacks include attacks by the hypervisor or co-reseident
-VMs to analyze the guest VM memory space.
+SEV is based upon AMD Memory Encryption Technology, which introduces an
+AES-128 encryption engine inside the System on Chip (SoC) that transparently
+encrypts and decrypts the data when it leaves or enters the SoC, respectively.
 %
-Physical attacks include hot memory I/O attacks or cold boot attacks.
-
-
-% Design
-%-------------------------
-AMD Memory Encryption Technology introdues an AES-128 encryption engine inside
-the System on Chip (SoC) that transparently encrypts and decrypts the data
-when it leaves or enters the SoC, respectively.
-%
-AMD proposes two main features based on Memory Encryption Technology: (1)
-Secure Memory Encryption (SME) and (2) Secure Encryption Virtualization (SEV)\@.
-%
-Both SEV and SME are managed by the OS or hypervisor, and no application software
-changes are needed.
-%
-AMD's Memory Encryption Technology does not provide memory integrity
-protection.
-
-
-% AMD secure coprocessor
-%-------------------------
 Encryption key management, such as generating, storing, and delivering the
 keys, are carried out by the AMD secure processor and the encryption keys are kept
 hidden from untrusted parts of the platform.
 %
-%The AMD secure processor utilizes a 32-bit ARM Cortex A5, and uses its memory
-%an storage while executing a kernel that is signed by AMD\@.
-%
-The secure processor provides a set of APIs for provisioning and managing
-the platform in the cloud.
+The secure processor provides a set of APIs for provisioning and managing the
+platform in the cloud.
 
 
-% Secure Memory Encryption (SME), and 
-% Transparent Secure memory Encryption (TSME)
-%---------------------------------------
-SEM is the security feature that addresses physical access atacks.
-%
-SEM is an x86 instruction set extension introduced by AMD for page-granular
-memory encryption support using a single ephemeral key.
-%
-The AMD secure processor randomly generates the key and loads it into the
-memory controller at boot time.
-%
-The OS is able to leverage the SME by setting a bit in the x86 page table (the
-en\emph{C}rypted, or \emph{C-bit}).
-%
-When the C-bit is set, access to that memory page is directed to the AMD Memory
-Encryption Engine.
-%
-In the SME design, all devices can access the encrypted pages through DMA\@.
-
-
-%In the case of legacy OSes, a feature called Transparent Secure Memory
-%Encryption (TSME) allows the C-bit to effectively be set in the BIOS for all
-%memory pages.
-
-
-% Secure Encrypted Virtualization 
-%---------------------------------------
-SEV extends SME to AMD-V, allowing individual VMs to run SEM using their own
-secure keys.
-%
-SEV encrypts and protects the VM's memory space from the hypervisor and
-co-resident VMs using a VM-specific encryption key.
+SEV allows individual VMs to encrypt their memroy pages using their own secure
+keys; the VM's memory space is thus protected from from the hypervisor and
+co-resident VMs.
 %
 When code and data arrive into the SoC, SEV tags all of the code and data
 associated with the guest VM in the cache and limits access only to the tag's
 owner VM.
 %
-%Under SEV, the ASID field in the page table is used as the key index that
-%identifies which encryption key is used to encrypt and decrypt the memory
-%traffic associated with that VM.
-%
-SEV-enabled VMs can control their own C-bit for memory pages they want
-encrypted.
+The guest OS is able to specify which memory pages are encrypted through new
+page table attributes.
 
-
-% Attestation and Provisioning
-%------------------------------
-%The AMD secure processor provides a set of APIs for provisioning and managing
-%the platform in the cloud.
-%
-%The hypervisor's SEV driver can invoke these APIs.
-%
-%In the SEV architectures, a guest owner manages her guest secret and generates
-%the policies for VM migration of debugging.
-%%
-%The Diffie-Hellman key exchange protocol is used between the guest owner and the
-%AMD secure processor to open a channel between the guest owner and the AMD
-%secure processor; the guest owner is able to authenticate the secure
-%processor and exchange information to set up the protected VM.
-%%
-%The guest owner can set a policy where certain pages are private and others
-%shared; if shared, the hypervisor can read it in plain text.
-%
-%
-%SEV may be used in conjunction with SME.  Under this scenario, each SEV-enabled
-%VM controls its own encryption via the C-bit and the host page tables control
-%the encryption for shared memory.
 
 
 \parhead{Attacks}
