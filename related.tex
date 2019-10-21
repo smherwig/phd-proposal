@@ -1,6 +1,9 @@
 \section{Related Work}
 \label{sec:related}
-% You want to keep this to no more than 3.5 pages (closer to 3).
+
+We present an overview of trusted execution environments, and then describe
+three, not necessarily orthogonal techniques, for post-hoc adapting existing
+software to satisfy alternative trust assumptions. 
 
 
 \subsection{Trusted Execution Environments}
@@ -53,7 +56,6 @@ However, enclaves are prohibited from making any system calls, so these must be
 proxied through the untrusted OS as well.
 
 
-% keep to two paragraphs
 \parhead{AMD-SEV Overview}
 %
 Whereas Intel SGX guards fine-grained units of execution, AMD's Secure
@@ -115,7 +117,7 @@ other cache-based side-channel attacks on SGX and in general
 % Each solution operates at a differnet level in the stack, more or less.
 % Handle TEE and non-TEE based solutions together.
 
-\subsection{Application-Level Solutions}
+\subsection{Partitioning (multi-trust) applications across trust domains} 
 % here, you can talk about program partitioning, both those that are aware of
 % TEEs, and those that came before.
 
@@ -165,39 +167,8 @@ Neither SSL splitting nor Keyless SSL provides for the protection of the
 session keys from the provider.
 
 
-\subsection{Cryptographic Solutions}
-% In addition to homomorphic encryption, also need to deal with verifiable
-% computation.
-%
-One seemingly straightforward approach to solving this problem would seem to be
-fully homomorphic encryption (FHE) or functional
-encryption~\cite{gentry2009fully, gentry2010computing, garg2016candidate}.
-%
-FHE allows one to perform arbitrary computations on \textit{encrypted} data,
-without knowing any of the keys.  
-%
+\subsection{Running (trusted) legacy applications in TEEs}
 
-However, even current state-of-the-art homomorphic encryption is much too slow
-for the performance that is required for our use-cases, and additionally would
-violate our goal to support legacy applications.
-
-
-Various approaches~\cite{desmoulins2018pattern,
-sherry2015blindbox, canard2017blindids,lan2016embark} apply searchable
-encryption schemes to achieve functionality like deep packet inspection (DPI)
-while still maintaining the privacy of data.
-%
-In general, these approaches require changes of some sort to the endpoint(s),
-suffer from performance overheads, and do not achieve the rich and varied
-features offered by providers.
-
-
-\subsection{Execution Environment Solutions}
-% se, here, you talk both about IFC as well as Running legacy applications in
-% SGX.
-
-\parhead{Running Legacy Applications on SGX}
-%
 Various works use SGX as a mechanism for achieving shielded execution of
 unmodified legacy applications.
 %
@@ -287,8 +258,8 @@ whereas our interest is in supporting \emph{legacy} applications.
 %% libOS either services these calls internally, or calls into the host kernel
 %% when host resources are needed.
 
-\parhead{Information Flow Control}
-%
+\subsection{Sandboxing (untrusted) applications via information flow controls}
+
 Decentralized information flow control (DIFC) enhanced operating systems allow
 dynamic labeling of OS abstrations, such as processes and files, and enforce
 access control based on Denning's lattic model for information flow
