@@ -1,19 +1,27 @@
 \section{Background}
 \label{sec:background}
 
-There are two oraganization, which is the user
-
-% trust model
-% goal 
-
+In this section, I clarify the problem with specific examples.
+%
+While the abstract problem could apply to several concrete ones, we focus on
+the everyday case of outsourcings.
+%
+Here there are two principals, the organization and the cloud service provider.
+%
+I describe the security and privacy implications.
+%
+Several trust models could apply to this situation, and I describe the them.
+%
+I then enumerate a list of goals for a system designed to handled this
+situation.
 
 
 \subsection{Problem}
 
 There are two broad flavors of outsourcing.
 %
-The first, \emph{cloud hosting}, is an organization migrating their in-house
-service to a third-party deployment; the second is an organization  migrating
+The first, \emph{cloud hosting}, is an organization migrating its in-house
+services to a third-party deployment; the second is an organization  migrating
 from in-house services to those offered by third party \emph{cloud services}.
 %
 Hybrids exist between these two extremes, such as where a cloud service
@@ -51,7 +59,7 @@ websites) use one or more CDNs to help reliably host their content.
 
 
 With these use-cases in mind, let's enumerate the security and privacy
-implications of outsourcing.
+implications of outsourcing such service such services.
 
 
 % XXX: try to keep each implication to one meaty paragraph.
@@ -67,8 +75,8 @@ certificate and the corresponding secret keys~\cite{key-sharing,
 when-https-meets-cdn}, so that they can accept TLS connections while
 maintaining low latency to clients.
 %
-Even with application like DNS, where an organization would traditionally sign
-their DNS records offline, the organization may choose to outsource the keys
+Even with an application like DNS, where an organization would traditionally sign
+its DNS records offline, the organization may choose to outsource the keys
 and management to the provider.
 %
 % TODO: cite cloudflare blog
@@ -90,9 +98,8 @@ data, such as passwords, cookies, and personal content, as well as statistics
 for client profiling.
 %
 The provider might further subcontract aspects of the deployment (as with an
-email provider using another provider for virus and spam scanning), such that
-the the client and organization are unaware of the extent of ther data
-exposure.
+email provider using another provider for virus and spam scanning), with
+the client and organization unaware of the extent of ther data exposure.
 
 
 \parhead{Correctness}
@@ -104,21 +111,20 @@ provider adheres to the expected service.
 %
 For instance, in the case of DNS hosting, a prior study found that 31\% of
 domains that claim to support DNSSEC fail to publish all relevant records
-required for validation.
+required for a client resolver to validate the response.
 
 
+% TODO: call this something else
 \parhead{Latent Trust Assumptions}
 %
 Assume a hybrid deployment where the organization has migrated its front-end
 business applications to a cloud service provider, but that the application's
 database remains within the organization’s network. 
 %
-Suppose further that the the organization has in-house applications that
-continue to use the database. 
-%
 Before migrating to the cloud, the database could trust that any connections to
-it were from benign, internal tools; now, the organization must guard against
-potentially malicious or devious queries from the cloud front-end.
+it were from benign, internal tools; in the new deployment setting, the
+organization must guard against potentially malicious or devious queries from
+the cloud front-end.
 
 
 \parhead{Legal and Regulatory Restrictions}
@@ -126,24 +132,15 @@ potentially malicious or devious queries from the cloud front-end.
 % talk about akamai not hosting content on thrid parties.
 % talk about HIPPA (as with emails)
 %
-Even if one were to assume a trustworthy CDN, the need to store
-sensitive key materials on edge servers introduces significant
-challenges.
+By outsourcing a service, the organization may be non-compliant with
+industry regulations.
 %
-CDNs have historically relied on a combination of their own physical
-deployments and deployment within third-party networks, such as college
-campuses.
+For instance, a hospital may be unable to run its electronic medical records
+system in the cloud due to concerns  of HIPPA compliance.
 %
-To protect their customers' keys, some CDNs refuse to deploy
-HTTPS content anywhere but at the data centers they have full physical
-control over~\cite{securing-cdns}.
-%
-However, as the web moves towards HTTPS-everywhere, this means that
-such CDNs can no longer make as much use out of third-party networks.
-%
-In short, without additional protections for private and session keys
-on edge servers, the move towards HTTPS-everywhere represents an
-\emph{existential threat} to edge-network services.
+In other words, even if the organization itself accepts the security and
+privacy implications of outsourcing their services, legal matters may restrict
+the degree to which the organization can leverage such deployments.
 
 
 \subsection{Trust Model}
@@ -260,29 +257,80 @@ treated as configuration details.
 
 \subsection{Goals}
 
-\subsubsection{Safety}
+Having reviewed the security implications of outsourcing services, as well as
+the emergent trust models, I now describe a set of goals by which to evaluate
+solutions.
+%
+The goals fit into two categories: \emph{safety goals}, which follow closely
+from the security implications, and \emph{practicality goals}, which address
+the flexibility of the solution to handle varied trust models and to support
+off-the-shelf software.
+
+\parhead{Safety Goals}
+%
+In the case of a server that uses TLS, safety goals increasingly diminish the
+adversarial powers of the provider to that of an on-path TLS attacker.
 
 \begin{enumerate}
-    \item \textbf{Protect private keys:}
+    \item[S1] \textbf{Protect private keys:}
         %
         Do not expose the organization's private keys to the provider.
+        %
+        Given that the servicr will still need use of the key, this goal alone
+        merely equates to the organization retaining the exclusive right to
+        revoke the key.
     
-    \item \textbf{Protect session keys:}
+    \item[S2] \textbf{Protect session keys:}
+        % prevents low-resource attacks for leaking session key for decoding of the TLS traffic,
+        % for either offline or online analysis; also, prevents collusion where
+        % leaks to colluding party who then injects content.
         %
         Once a connection is established, do not expose the ephemeral session keys (nor
-        the sensitive materail for session resumption) to the provider.
+        the sensitive material for session resumption) to the provider.
+        %
+        Protecting the TLS session keys does not in and of itself imply that
+        the provider does not obsersce the decrypted TLS streams; however, it does
+        prevent low-resource collusion whereby the provider leaks the keys to
+        an on-path party, who may then record and decrypt the streams or
+        inject malicious content.
 
+    \item[S3] \textbf{Protect TLS streams:}
+        %
+        The provider cannot observe the the plaintext of the TLS streams.
+        %
+        Note howerver, that the provider still manages the streams and has
+        control over the responses.
 
-    \item \textbf{Ensure correctness:}
-    %
-    Ensure that the provider is running the actual service as expected.
+    \item[S4] \textbf{Protect organization content:}
+        %
+        The provider cannot view or modify the organization's private content.
+
+    \item[S5] \textbf{Ensure correctness:}
+        %
+        Ensure that the provider is running the actual service as expected.
+
 \end{enumerate}
 
 
-\subsubsection{Practicality}
+\parhead{Practicality Goals}
+%
+The practicality goals enumerate concrete features that are favorable to a
+system's adoption.
 
 \begin{enumerate}
-    \item \textbf{Allow configurable deployment and trust models:}
+    \item[P1] \textbf{Support legacy applications:} 
+        %
+        Support legacy binary applications; the system should not require that
+        applications be rewritten or recompiled.
+
+    \item[P2] \textbf{Maintain outsourcing:}
+        %
+        Maintain the property that the provider hosts the majority of the computation,
+        and avoid degenerate solutions that transfer hosting responsbilities
+        back to the organization, thereby defeating the intent of
+        outsourcing.
+
+    \item[P3] \textbf{Allow configurable deployment and trust models:}
         %
         Solutions that depend exclusively on hardware enclaves are additionally
         hampered by two realities.
@@ -298,28 +346,13 @@ treated as configuration details.
         Based on this history, even if enclaves are available, the organization may be
         unwilling to provision an enclave with sensitive data.
 
-
-    \item \textbf{Support legacy applications:} 
-        %
-        Support legacy binary applications; the system should not require that
-        applications be rewritten or recompiled.
-
-
-    \item \textbf{Support multi-tenancy:} 
+    \item[P4] \textbf{Support multi-tenancy:} 
         %
         For provider services that muliplex
         across multiple organizations, the system should support multiple
         organizations, and with strong isolation between them.
 
-
-    \item \textbf{Maintain outsourcing:}
-        %
-        Maintain the property that the provider hosts the majority of the computation,
-        and avoid degenerate solutions that defeat the benefits of outsourcing by
-        transferring hosting responsbilities back to the organization.
-
-
-    \item \textbf{Maintain performance:}
+    \item[P5] \textbf{Maintain performance:}
         %
         Ideally, the performance of the system is similar to that of the vanilla
         system.

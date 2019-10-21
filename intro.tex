@@ -97,7 +97,7 @@ My proposed work, Gemini, consigns trusted hardware availability and
 application trustworthiness as policy concerns.
 %
 Gemini is an execution environment that offers two complementary abstractions:
-(1) \emph{distributed container}, where organizations may pin sensitive data to
+(1) \emph{distributed containers}, where organizations may pin sensitive data to
 domains (such as a host) that they trust; a thread's execution migrates to the
 trusted domain when computing with the sensitive data or any sensitive data
 derived from it, and (2) \emph{policy monitors}---modules that an organization
@@ -105,7 +105,7 @@ may install in a trusted environment that enforce expected behavior of an
 untrusted application.
 %
 A key feature of policy monitors is that the policies express a specification
-for program correctness based on dynamically tracking information flows, which
+for program correctness based on tracking information flows, which
 the monitor enforces at run-time.
 
 This proposal is organized as follows:
