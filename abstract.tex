@@ -7,7 +7,7 @@ additional protections inherent to these hosting environments.
 %
 Unfortunately, such a shift poses a security tradeoff: third-parties that
 provide or host the application potentially gain access to sensitive
-information about the application, its owner, or its clients.
+information about the organization or its clients.
 
 
 In my proposal, I ask whether it is possible to run legacy application binaries
@@ -33,26 +33,12 @@ In the second part, I propose a new run-time system, \emph{Gemini}, that is
 agnostic to the availability of secure hardware and the trustworthiness of
 the application.
 %
-Gemini presents two complementary abstractions: 
-\emph{distributed containers}, where organizations pin sensitive data to
-domains that they trust; a thread's execution migrates to the
-trusted domain when computing with the sensitive data or any sensitive data
-derived from it, and \emph{policy monitors}---modules that an organization
-installs in a trusted environment to enforce expected behavior of an
-untrusted application based on information flow tracking.
+Gemini presents two complementary abstractions: \emph{distributed containers},
+where organizations pin sensitive data to domains that they trust, and
+\emph{policy monitors}---modules that an organization installs in a trusted
+environment to enforce expected behavior of untrusted applications.
 %
 I present the design of Gemini and propose a set of evaluations for assessing
 its correctness and performance.
-
-
-
-
-
-
-
-
-
-
-
 
 \end{abstract}
