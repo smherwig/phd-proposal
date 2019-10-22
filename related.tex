@@ -86,7 +86,6 @@ The guest OS is able to specify which memory pages are encrypted through new
 page table attributes.
 
 
-
 \parhead{Attacks}
 %
 We must address the recent rise of side-channel attacks against SGX, including
@@ -120,8 +119,6 @@ other cache-based side-channel attacks on SGX and in general
 \subsection{Partitioning (multi-trust) applications across trust domains} 
 % here, you can talk about program partitioning, both those that are aware of
 % TEEs, and those that came before.
-
-\parhead{By Hand}
 
 
 \parhead{Compiler Techniques}
@@ -176,13 +173,28 @@ session keys from the provider.
 
 
 \parhead{Protecting Trusted Application from Untrusted OS (TEE-less)}
-
-
+%
+Several works~\cite{overshadow,inktag} that predate Intel SGX and AMD-SEV
+extend the isolation capabilties of a hypervisor to give storng safety
+guarantees to applications even in the presence of malicious guest operating
+system.
+%
+These systems prevent the guest operating system from reading or modifying
+application code, data, and registers through a technique called
+\emph{cloaking}, in which the application sees a normal view of its memory
+pages, but the OS an encrypted view.
+%
+Cloaking allows resources to remain accessible to the OS, yet secure,
+permitting the OS to manage resources without compromising application
+privacy or integrity.
+%
+Inktag also enables the hypervisor to verify the behavior of the untrusted
+commodity operating system, as by checking that the memory mappings requested
+by the application match those returned by the OS.
 
 
 \subsection{Running (trusted) legacy applications in TEEs}
-
-
+%
 Various works use SGX as a mechanism for achieving shielded execution of
 unmodified legacy applications.
 %
