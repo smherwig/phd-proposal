@@ -1,31 +1,30 @@
 \section{Background}
 \label{sec:background}
 
-In this section, I clarify the problem with specific examples.
+In this section, I clarify the problem with specific examples, and specifically
+focuse on the everday case of outsourcing.
 %
-While the abstract problem could apply to several concrete ones, we focus on
-the everyday case of outsourcings.
 %
-Here there are two principals, the organization and the cloud service provider.
+In this setting there are two principals: the \emph{organization} and the
+\emph{cloud service provider}.
 %
-I describe the security and privacy implications.
+I describe the security and privacy implications of naively outsourcing, as
+well as several trust models that apply to this setting, 
 %
-Several trust models could apply to this situation, and I describe the them.
-%
-I then enumerate a list of goals for a system designed to handled this
-situation.
+I then enumerate a list of goals for a system designed to handled these
+implications.
 
 
 \subsection{Problem}
 
-There are two broad flavors of outsourcing.
+There are two broad approaches of outsourcing.
 %
 The first, \emph{cloud hosting}, is an organization migrating its in-house
 services to a third-party deployment; the second is an organization  migrating
 from in-house services to those offered by third party \emph{cloud services}.
 %
-Hybrids exist between these two extremes, such as where a cloud service
-provider must communicate with the organization's, in-house, backend services.
+Hybrid approaches exist, such as where a cloud service provider must
+communicate with the organization's, in-house, backend services.
 %
 Common outsourcing examples are an organization moving its HTTPS, DNS, or
 email servers into the cloud, or contracting some other party to run its own
@@ -84,7 +83,7 @@ With the organization's private DNS keys online, the provider can offer
 additional services, such as greater flexibility to return geographically-based
 responses, as well as zone enumeration defenses.
 %
-This has significant implications on the trust model of the PKI and the web
+This has significant implications on the trust model of each PKI and the web
 writ large: today's providers can arbitrarily impersonate any of their customer
 organizations.
 
@@ -92,14 +91,14 @@ organizations.
 \parhead{Breach of Confidentiality}
 % Honest but curious
 %
-With the provider acting a man-in-the-middle between the
+With the provider acting as a man-in-the-middle between the
 organization and its clients, the provider is privy to the client's private
-data, such as passwords, cookies, and personal content, as well as statistics
+data, such as passwords, cookies, and personal content, as well as metadata 
 for client profiling.
 %
 The provider might further subcontract aspects of the deployment (as with an
 email provider using another provider for virus and spam scanning), with
-the client and organization unaware of the extent of ther data exposure.
+the client and organization unaware of the extent of their data exposure.
 
 
 \parhead{Correctness}
@@ -109,9 +108,11 @@ the client and organization unaware of the extent of ther data exposure.
 By outsourcing a service, the organization no longer has guarantees that the
 provider adheres to the expected service.
 %
-For instance, in the case of DNS hosting, a prior study found that 31\% of
+For instance, one DNS study~\cite{chung-2017-dnssec} discovered that 31\% of
 domains that claim to support DNSSEC fail to publish all relevant records
-required for a client resolver to validate the response.
+required for a client resolver to validate the response, while
+a study~\cite{open-http-proxies} of open HTTP proxies found that 5\% perform
+unwanted or malicious content modification.
 
 
 % TODO: call this something else
@@ -204,7 +205,7 @@ trusts the provider, and whether the organization trusts the provider's
 software.
 
 
-\parhead{Models we ignore}
+\parhead{Irrelevant Models}
 In models 1 and 2, the organization trusts both
 the provider and the software, and thus the application may be run in a
 conventional environment.
@@ -217,20 +218,24 @@ We choose not to focus on these models as they either disobey an assumption on
 the transitivity of trust (that is, a trusted provider deploying a non-trusted,
 proprietary, application), or speak to the case of running buggy software,
 the latter of which is both outside of our trust model and mitigated with
-existing sandbox techniques.
+existing sandboxing techniques.
 
 
 % In the figure, use colors to show the models you treat in the thesis
-\parhead{Models we focus on}
+\parhead{Relevant Models}
 In model 5, the organization trusts the software, but does not trust the
 provider to run it faithfully, and thus uses one of various
 approaches~\cite{talos,haven,scone,graphene} to
 run an unmodified legacy application in an enclave.
 %
-In contrast, in model 6, an enclave is not available (or not trusted to be
-immune to side-channnel attacks).
+This is the trust model for my prior work, conclaves, described in
+\S\ref{sec:conclaves-summary}.
 %
-This is the starting use-case for Gemini.
+In contrast, in model 6, an enclave is not available (or assumed vulnerable to
+to side-channnel attacks).
+%
+This is the starting use-case for Gemini, described in
+\S\ref{sec:gemini-design}.
 %
 In models 7 and 8, where neither the provider nor the software is trusted, no
 general prupose solution exists for an organization to securely use an
@@ -258,13 +263,13 @@ treated as configuration details.
 \subsection{Goals}
 
 Having reviewed the security implications of outsourcing services, as well as
-the emergent trust models, I now describe a set of goals by which to evaluate
+the pertinent trust models, I now describe a set of goals by which to evaluate
 solutions.
 %
 The goals fit into two categories: \emph{safety goals}, which follow closely
 from the security implications, and \emph{practicality goals}, which address
 the flexibility of the solution to handle varied trust models and to support
-off-the-shelf software.
+commodify software.
 
 \parhead{Safety Goals}
 %
@@ -289,7 +294,7 @@ adversarial powers of the provider to that of an on-path TLS attacker.
         the sensitive material for session resumption) to the provider.
         %
         Protecting the TLS session keys does not in and of itself imply that
-        the provider does not obsersce the decrypted TLS streams; however, it does
+        the provider does not observe the decrypted TLS streams; however, it does
         prevent low-resource collusion whereby the provider leaks the keys to
         an on-path party, who may then record and decrypt the streams or
         inject malicious content.
@@ -320,8 +325,8 @@ system's adoption.
 \begin{enumerate}
     \item[P1] \textbf{Support legacy applications:} 
         %
-        Support legacy binary applications; the system should not require that
-        applications be rewritten or recompiled.
+        Support legacy binary applications; the system should not require
+        applications to be rewritten or recompiled.
 
     \item[P2] \textbf{Maintain outsourcing:}
         %

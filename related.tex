@@ -201,6 +201,7 @@ unmodified, trusted, legacy applications.
 These works generally differ in how much of the application's code runs
 within the enclave.
 
+
 \parhead{Minimal TCB approachs}
 %
 At one extreme, TaLoS~\cite{talos} simply ports the LibreSSL library to SGX so
@@ -222,7 +223,7 @@ allows the application to be partitioned into multiple enclaves, and
 enforces run-time data and control flows between the resultant enclaves.
 
 
-\parhead{Library Operating System approaches}
+\parhead{Library Operating System Approaches}
 %
 At the other extreme, SCONE~\cite{scone} moves the entire C library into the enclave.
 %
@@ -241,6 +242,7 @@ Management Mode (SMM) by running device drivers in SMM memory.
 
 \subsection{Sandboxing (untrusted) applications via information flow controls}
 
+\parhead{OS-Level IFC}
 Decentralized information flow control (DIFC) enhanced operating systems allow
 dynamic labeling of OS abstrations, such as processes and files, and enforce
 access control based on Denning's lattic model for information flow
