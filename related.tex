@@ -52,8 +52,8 @@ sgx_sealing}.
 SGX also provides such features as trusted time and monotonic counters
 \cite{sgx-linux-sdk,sgx-trusted-time}.  
 %
-However, enclaves are prohibited from making any system calls, so these must be
-proxied through the untrusted OS as well.
+However, as enclave code is always executed in user mode, system calls
+must be proxied through the untrusted OS.
 
 
 \parhead{AMD-SEV Overview}
@@ -116,7 +116,7 @@ other cache-based side-channel attacks on SGX and in general
 % Each solution operates at a differnet level in the stack, more or less.
 % Handle TEE and non-TEE based solutions together.
 
-\subsection{Partitioning (multi-trust) applications across trust domains} 
+\subsection{Partitioning applications across trust domains} 
 % here, you can talk about program partitioning, both those that are aware of
 % TEEs, and those that came before.
 
@@ -172,7 +172,7 @@ Neither SSL splitting nor Keyless SSL provides for the protection of the
 session keys from the provider.
 
 
-\parhead{Protecting Trusted Application from Untrusted OS (TEE-less)}
+\parhead{Virtualization Techniques} 
 %
 Several works~\cite{overshadow,inktag} that predate Intel SGX and AMD-SEV
 extend the isolation capabilties of a hypervisor to give storng safety
@@ -196,30 +196,40 @@ by the application match those returned by the OS.
 \subsection{Running (trusted) legacy applications in TEEs}
 %
 Various works use SGX as a mechanism for achieving shielded execution of
-unmodified legacy applications.
+unmodified, trusted, legacy applications.
 %
 These works generally differ in how much of the application's code runs
 within the enclave.
-%% , and the complexity of the interface between the enclaved
-%% and non-enclaved portions.
 
-
+\parhead{Minimal TCB approachs}
+%
 At one extreme, TaLoS~\cite{talos} simply ports the LibreSSL library to SGX so
 that the application terminates TLS connections in an enclave; the rest of
 the application remains outside the enclave, unchanged.
 %
-This approach protects the private keys and session
-keys, but does not address our goals of multitenancy or WAFs.
+% emphasize: smaller TCB, 
+Several works~\cite{glamdring, panoply} generalize this approach by using developer
+provided source-level annotations to partition an application into sensitive and
+non-sensitive commponts, with the sensitive components running in an enclave.
+%
+In particular, Glamdring~\cite{glamdring} takes a similar approach to
+Privtans~\cite{privtrans}, while also aiding a backslicing technique so that
+fucntions and variables that influence a sensitive output are also isolated to
+an enclave.  
+%
+Panoply~\cite{panoply} focuses less on the  partitioning scheme, but instead
+allows the application to be partitioned into multiple enclaves, and
+enforces run-time data and control flows between the resultant enclaves.
 
 
+\parhead{Library Operating System approaches}
+%
 At the other extreme, SCONE~\cite{scone} moves the entire C library into the enclave.
 %
-%% SCONE~\cite{scone} instead moves the entire C library into the enclave, and
 Haven~\cite{haven} and Graphene~\cite{graphene} carry this approach further by
 implementing kernel functionality in an enclave by means of a library operating
-system (libOS).
-libOSes refactor a traditional OS kernel into a user-land library that loads a
-program.
+system (libOS).  libOSes refactor a traditional OS kernel into a user-land
+library that loads a program.
 %
 The program's C library is modified to redirect system calls to the libOS, which
 in turn either services the calls internally or calls into the untrusted OS
@@ -228,61 +238,6 @@ when the host's resources are needed.
 Aurora~\cite{liang2018aurora} extends the libOS from the SGX enclave to System
 Management Mode (SMM) by running device drivers in SMM memory.
 
-
-CDN applications involve multiple processes, and of these works, only Graphene
-supports forking and executing new processes within enclaves.
-%
-However, Graphene's support for shared state among multiple enclaves, such as a
-read-write file system and shared memory, is limited.
-%
-We discuss these limitations in \S\ref{sec:design} and our extensions to
-Graphene in \S\ref{sec:implementation}.
-
-
-Other work~\cite{beekman2016improving} provides
-%% We also note projects such as~\cite{beekman2016improving} which present
-frameworks for developing \emph{new} software that takes advantage of SGX,
-whereas our interest is in supporting \emph{legacy} applications.
-
-% Aurora ~\cite{liang2018aurora}  takes a
-% slightly different approach, but is still not well-suited to the multi-tenant
-% case, in particular for isolation of the filesystems, memory, and time.
-
-% Beekman~\cite{beekman2016improving} seeks to build a way for Internet service
-% providers to host secure services that protect the confidentiality and
-% integrity of a user's data using SGX.  While our goals are similar in nature,
-% the approaches differ in system-level that provides the services and isolation.
-% Beekman's secure service mechanism operates at the application level and
-% requires application changes.  Our mechanism is at the OS-level and supports
-% legacy applications.
-
-%but I think the gist is that aurora installs it's own little operating system
-%into System Management Mode, which is super-privileged and typically only for
-%the BIOS's operation.
-
-%I think the difference is likely that that design doesn't quite address
-%multiple users/customers; in particular, isolating the the filesystems,
-%memory, time, etc. like we do;
-
-%it's also not clear to me that SMM has the same properties as the EPC
-%that is, the memory might be readable by someone with physical access
-%I'm not very familiar with SMM
-
-
-
-% Prior work on SGX libOSes~\cite{graphene,scone,haven} make it possible
-% to run legacy applications within an SGX enclave, but all of them
-% either lack multiprocess support completely, or only support multiple
-% processes in a restricted environment.
-
-%
-% Moved to prior work
-%% libOSes refactor a traditional OS kernel into a user-land library that loads
-%% the program.
-%% %
-%% The program's C library is modified to redirect system calls to the libOS; the
-%% libOS either services these calls internally, or calls into the host kernel
-%% when host resources are needed.
 
 \subsection{Sandboxing (untrusted) applications via information flow controls}
 
