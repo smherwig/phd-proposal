@@ -121,41 +121,49 @@ other cache-based side-channel attacks on SGX and in general
 % here, you can talk about program partitioning, both those that are aware of
 % TEEs, and those that came before.
 
-\parhead{HTTP Solutions}
-% TODO: others (NoCDN, SINE, OCDN, S-HTTP, Data Staging on Untrusted
-% Surrogates)
-%
-Several systems have proposed that the origin server digitally
-sign their data~\cite{cdn-on-demand,stickler} or embed cryptographic hashes
-directly into
-HTML~\cite{w3c-subresource-integrity,w3c-content-security-policy}, which
-clients can then verify.
-%
-Such approaches ensure provenance, freshness, and integrity of web assets
-served by a proxy---without requiring the proxy to store the origin server's
-private key.
-%
-However, they do not provide for confidentiality, nor do they allow for CDN
-services such as media transcoding and web application firewalls.
-%
-Moreover, they place the origin on the critical path, thereby increasing
-latency and making them more susceptible to attack.
+\parhead{By Hand}
 
 
-\parhead{TLS Solutions}
+\parhead{Compiler Techniques}
+%
+Privtrans~\cite{privtrans} partitions a single program into two parts: a
+privileged program called the monitor and an unprivileged program called the
+slave. 
+%
+The monitor and slave run as separate processes, but communicate and cooperate
+to perform the same function as the original program.
+%
+This is process-level isolation, and the monitor can be seen as interposing
+between privileged operations and the main execution in the slave.
+
+
+Privtrans allows a developer to add privilege separation to source code via
+source-level annotations of variable and functions to indicate privileged
+operations.  
+%
+Privtrans then propagates attributes, performs static analysis to find
+privileged call sites, and performs C-to-C translation to partition the input
+source code into the source code for the monitor and slave. 
+%
+Monitor must mediate access to all privileged resources, including the data
+derived from such a resource; it is not sufficient for the monitor to only
+perform access control.
+%
+In contrast, developers can augment monitors with application-specific
+downgrade policies to make otherwise priviledged data flow from the monitor to
+the slaves.  
+
+
+\parhead{Protocol Refactoring}
 %
 Other work allows the organization to retain ownership of its private keys by
-changing the server-side implementation of TLS.
+changing the server-side implementation of TLS\@.
 %
 SSL Splitting~\cite{ssl-splitting} leverages the fact that a TLS stream
 comprises data records and authentication records (MACs), and develops a new
 protocol in which the organization sends the authentication records and the
 provider merges them with the data records to form the complete TLS stream.
 %
-In essence, this implements the above HTTP solutions in TLS, and thus suffers
-from the same limitations of requiring the origin server to be on the fast
-path.
-
 Cloudflare's Keyless SSL~\cite{keyless-ssl} takes advantage of the fact that
 TLS only uses the website's private key in a single step of the TLS handshake.
 %
@@ -167,7 +175,13 @@ Neither SSL splitting nor Keyless SSL provides for the protection of the
 session keys from the provider.
 
 
+\parhead{Protecting Trusted Application from Untrusted OS (TEE-less)}
+
+
+
+
 \subsection{Running (trusted) legacy applications in TEEs}
+
 
 Various works use SGX as a mechanism for achieving shielded execution of
 unmodified legacy applications.
