@@ -81,7 +81,7 @@ system calls that transfer tainted data.
 %
 The process monitor tracks the propagation of taint in the process's
 memory space using shadowed pages inaccessible to the application.
-
+%
 
 \parhead{System monitor}
 The system monitor keeps a system-wide account of tainted resources,
@@ -284,21 +284,18 @@ circuits when it detects such events.
 
 \subsection{Security policies}
 %
-There are two types of security policies: those that guarantee
-confidentiality, and those that guarantee integrity.
+There are two types of security policies: \emph{confidentiality policies} and
+\emph{integrity policies}.
 %
-The confidentiality policies take the form of migration and restricting read
-and write privileges of code segments with respect to data.
+Confidentiality policies either pin data or restrict the accesss privileges of
+code with respect to the data.
 %
-The integrity policies take the form of stateful, tag-aware, packet filters.
-%
-The central premise of the integrity policies is that, while the organization
-may be unable to comprehensively validate the correctness of the untrusted
-service, it can, to varying degrees, specify a model of incorrect behavior that
-is independent of the application's code, and instead based on the flow of the
-organization's data within that service. 
+Integrity policies specificy a service's behavior
+based on the flow of the data within and from that service. 
 
 
+Policies are expressed over taint tags.
+%
 A tag belongs to one of three classes: \emph{pinned}, \emph{provenance},
 or \emph{access}.
 %
@@ -312,26 +309,35 @@ An access tag applies to domains, code, and data, and indicates the read or
 write privileges of the domain or code with respect to the data.
 
 
-\parhead{Example firewall policies}
+Organizations introduce tags into the system by either a tool (or monitor) that
+tags static files, or by egress rules that tag data as it transfers from
+between domains.
+%
+Monitors propagate the tags in accordance with computation across the memory
+space, filesystem, and network.
+
+
+\parhead{Confidentiality Policies}
+\begin{enumerate}
+    \item[C1]  The organization's private key(s) must not be leaked to untrusted parties.
+\end{enumerate}
+
+
+\parhead{Integrity Policies}
 
 \begin{enumerate}
-    \item The organization's private key(s) must not be leaked to untrusted parties.
-
-    \item If the organization's data (e.g., webpage, DNS records, emails) leaves the
+    \item[I1] If the organization's data (e.g., webpage, DNS records, emails) leaves the
         service, it must be sent over a flow endorsed by the organization's private
         key.
 
-    \item Any flow endorsed by the organization's private key must only send
+    \item[I2] Any flow endorsed by the organization's private key must only send
         data originating from the organization.
 
-    \item If the organization's data leaves the service, it must not have been
+    \item[I3] If the organization's data leaves the service, it must not have been
         modified.
-
-    \item In the case of a distributed service, the organization's data can
-        traverse other nodes that  guarantee the above properties.
 \end{enumerate}
 
-Assertions (3) and (4) are impractically strict: web and mail servers will add
+Policies (I2) and (I3) are impractically strict: web and mail servers will add
 headers to the outgoing content, and may further modify the content through a
 legitimate transformation, such as compression or image transcoding.
 %
@@ -342,7 +348,28 @@ be specified as: ``Any flow endorsed by the organization's private key must
 \emph{eventually} send data originating from the organization."
 
 
-\parhead{Application: HTTPS Server}
+\parhead{Transitive Closure Policy}
+
+\begin{enumerate}
+    \item In the case of a distributed service, the organization's data can
+        traverse other nodes that  guarantee the above properties.
+\end{enumerate}
+
+
+% The TLS frames will contain metadata fields (sequence numbers, etc.),
+% that are not tagged as belonging to the organization.
+% %
+% Thus, the monitor uses an application-layer parser to parse the
+% messages, and consults with the policy regarding which tags should be on
+% which fields.
+% %
+% If simple temporal logic is fine (not labeled until labeled), then the monitor
+% does need the underlying plaintext; otherwise, the monitor must further impose
+% an implementation requirements on the application; namely, the use of
+% kernel-TLS\@.
+
+
+\parhead{Example: HTTPS Edge Server}
 %
 Execution migrates to the organization, which produces an RSA signature, and
 then execution migrates back to the CDN\@.
@@ -353,7 +380,7 @@ signature, which is also sent to the CDN\@.
 The CDN sends the signature to a web client as part of the ServerHello TLS
 message.
 %
-When the CDN's monitor sends the signature, it marks the corresponding socket
+When the CDN's monitor sends the signature, it marks the corresponding flow
 with the tag.
 
 
@@ -370,19 +397,6 @@ monitor checks that these frames include data that is tagged as originating
 from the organization. 
 
 
-The TLS frames will contain metadata fields (sequence numbers, etc.),
-that are not tagged as belonging to the organization.
-%
-Thus, the monitor uses an application-layer parser to parse the
-messages, and consults with the policy regarding which tags should be on
-which fields.
-%
-If simple temporal logic is fine (not labeled until labeled), then the monitor
-does need the underlying plaintext; otherwise, the monitor must further impose
-an implementation requirements on the application; namely, the use of
-kernel-TLS\@.
-
-
 \begin{figure}[t]
 	\centering
     \includegraphics[width=0.5\textwidth]{figs/https-flowchart}
@@ -394,31 +408,31 @@ kernel-TLS\@.
 \end{figure}
 
 
-\parhead{Application: DNS Authoritative Server}
-%
-The firewall rules for a DNSSEC-enabled server inspects incoming packets, and keep a
-running mapping of the requests's ID to whether the request requires DNSSEC
-(the request's \texttt{DO} bit).
-%
-When sending responses, the policy  parses the response's ID and retrieves the
-corresponding \texttt{DO} value from the mapping.
-%
-If the mapping indicates that the request set \texttt{DO}, the firewall
-verifies that the response includes an \texttt{RRSIG} record tagged with the
-organization's private key.
-%
-Regardless, the firewall verfiies that the remaining response data is tagged as originating
-from the organization.
+% \parhead{Application: DNS Authoritative Server}
+% %
+% The firewall rules for a DNSSEC-enabled server inspects incoming packets, and keep a
+% running mapping of the requests's ID to whether the request requires DNSSEC
+% (the request's \texttt{DO} bit).
+% %
+% When sending responses, the policy  parses the response's ID and retrieves the
+% corresponding \texttt{DO} value from the mapping.
+% %
+% If the mapping indicates that the request set \texttt{DO}, the firewall
+% verifies that the response includes an \texttt{RRSIG} record tagged with the
+% organization's private key.
+% %
+% Regardless, the firewall verfiies that the remaining response data is tagged as originating
+% from the organization.
 
 
-\subsection{Tag Properties}
-
+\parhead{Tag Properties}
+%
 \begin{widelist}
 \item \textbf{Unforgeable:}
     %
-    A possible attack is that the provider adds its own module that taints data as
-    if it came from teh organziation, and so the data passes the organization's
-    polic monitor.
+    A possible attack is that the provider adds its own policy that taints data as
+    if it came from the organization, and so the data passes the organization's
+    policy monitor.
     %
     This threat implies that either the monitors maintain the secrecy of the tags
     from the untrusted applications, or make them unforgeable.
@@ -428,14 +442,14 @@ from the organization.
 
 \item \textbf{Irrevocable:}
     %
-    If Gemini is running in a secure enclave, organization $A$ might have apply
-    a tag to it's enclaved private key that specifies that only a specific
+    If Gemini is running in a secure enclave, organization $A$ might apply
+    a tag to its enclaved private key that specifies that only a specific
     piece of code is allowed to access the data.
     %
     Thus, it is necessary that organization $B$ be unable to remove $A$'s tag,
     lest $B$ gain access to $A$'s private key.
     %
-    Only an organization can remove its own tags.
+    In short, only an organization can remove its own tags.
 
 \item \textbf{Multiple tags per byte:}
     %
@@ -453,15 +467,32 @@ from the organization.
     system most support a large tag space.
 \end{widelist}
 
-For space considerations, there is also the need to perform tag coalescing, as where
-many contigous bytes all share the same tag set.
+For space considerations, there may also be the need to perform tag coalescing, as where
+many contiguous bytes share the same tag set.
 
 
-\subsection{Introducing Taint-Tags}
+\parhead{Egress Monitor}
+%
+Egress monitors are primarily for integrity, not confidentiality, and thus
+we do not have to be concerned with the monitor laundering taint.
+%
+Egress monitors perform two tasks: (1) request attestations from remote
+monitors, and (2) provide a mechanisms for stateful, tag-aware, packet filters.
+%
+One challenge is that the packet filters may have to operate over encrypted
+data, which might diffuse the taint applied to the underlying plaintext.
+%
+In such cases, I  envision the monitor must imposing
+an implementation requirement on the application; namely, the use of
+kernel-TLS\@.
+%
+An additiona design contraint regarding performance is that, in the case of
+multi-tenancy, a system may have many egress policies that are identical with
+the exception of the tag values.  Thus, I might have a monitor-level policy
+whereby monitors can only view data that includes one of its tags.
 
 
 
-\subsection{Policy Interpreter}
 
 % How does tagging code work?
 %   You could tag openssl with the a tag from the org that grants openssl
@@ -472,25 +503,7 @@ many contigous bytes all share the same tag set.
 %
 %   These seem pretty much the same to me.
 %
-%   Maybe this motivates having "classes" of tags.  For instance, some tags
-%   specify a provenance (this data was processed by such and such); others
-%   specify an access control (such and such code may read/write this data).
-%
-%   Is there ever a case where a monitor would want to dynamically create a
-%   tag?
-%       This gets into the question of how taint gets introduced, or is it
-%       merely external to the system.  For instance,in the provenance case,
-%       the origin server needs to tag the content that it sends to the edge
-%       server, and such content may be dynamic.  
-%
 %       You don't want to have to run the origin server under emulation --
 %       it's not doing any taint tracking.  So, instead, you can imagine 
 %       applying the taint at the network filter.
 %
-% If 
-
-
-
-
-
-
