@@ -283,23 +283,36 @@ circuits when it detects such events.
 
 
 \subsection{Security policies}
-% Talk about in "real" terms, what security properties the organization gains,
-% such as ability to revoke their key, such that the CDN never sends data that
-% isn't endorsed by the organization, and so on, and how these properties are
-% immunte the CDN laundering taint.
-
-There are two types of security policies: those that specify a migration to
-and those that impose ``firewall" rules.
 %
-The firewall rules allow for a stateful, tag-aware, packet filter.
-
-We now collect the correctness assertions common to these three use-cases.
+There are two types of security policies: those that guarantee
+confidentiality, and those that guarantee integrity.
 %
-The central premise is that, while the organization may be unable to
-comprehensively validate the correctness of the untrusted service, it can, to
-varying degrees, specify a model of incorrect behavior that is independent of the
-application's code, and instead based on the flow of the organization's data
-within that service. 
+The confidentiality policies take the form of migration and restricting read
+and write privileges of code segments with respect to data.
+%
+The integrity policies take the form of stateful, tag-aware, packet filters.
+%
+The central premise of the integrity policies is that, while the organization
+may be unable to comprehensively validate the correctness of the untrusted
+service, it can, to varying degrees, specify a model of incorrect behavior that
+is independent of the application's code, and instead based on the flow of the
+organization's data within that service. 
+
+
+A tag belongs to one of three classes: \emph{pinned}, \emph{provenance},
+or \emph{access}.
+%
+A pinned tag applies to code and data, and indicates the domain (such
+as a host) that has pinned the associated code or data.
+%
+A provenance tag applies only to data and indicates that either a domain or a piece of
+code has processed that data.
+%
+An access tag applies to domains, code, and data, and indicates the read or
+write privileges of the domain or code with respect to the data.
+
+
+\parhead{Example firewall policies}
 
 \begin{enumerate}
     \item The organization's private key(s) must not be leaked to untrusted parties.
@@ -329,7 +342,7 @@ be specified as: ``Any flow endorsed by the organization's private key must
 \emph{eventually} send data originating from the organization."
 
 
-\parhead{Example: HTTPS Server}
+\parhead{Application: HTTPS Server}
 %
 Execution migrates to the organization, which produces an RSA signature, and
 then execution migrates back to the CDN\@.
@@ -381,7 +394,7 @@ kernel-TLS\@.
 \end{figure}
 
 
-\parhead{Example: DNS Authoritative Server}
+\parhead{Application: DNS Authoritative Server}
 %
 The firewall rules for a DNSSEC-enabled server inspects incoming packets, and keep a
 running mapping of the requests's ID to whether the request requires DNSSEC
@@ -421,6 +434,8 @@ from the organization.
     %
     Thus, it is necessary that organization $B$ be unable to remove $A$'s tag,
     lest $B$ gain access to $A$'s private key.
+    %
+    Only an organization can remove its own tags.
 
 \item \textbf{Multiple tags per byte:}
     %
@@ -442,7 +457,40 @@ For space considerations, there is also the need to perform tag coalescing, as w
 many contigous bytes all share the same tag set.
 
 
+\subsection{Introducing Taint-Tags}
+
+
+
 \subsection{Policy Interpreter}
+
+% How does tagging code work?
+%   You could tag openssl with the a tag from the org that grants openssl
+%   permission.
+%
+%   You could assume that openssl is tagged by openssl's org, and the data's
+%   tag specifiies who can read it.
+%
+%   These seem pretty much the same to me.
+%
+%   Maybe this motivates having "classes" of tags.  For instance, some tags
+%   specify a provenance (this data was processed by such and such); others
+%   specify an access control (such and such code may read/write this data).
+%
+%   Is there ever a case where a monitor would want to dynamically create a
+%   tag?
+%       This gets into the question of how taint gets introduced, or is it
+%       merely external to the system.  For instance,in the provenance case,
+%       the origin server needs to tag the content that it sends to the edge
+%       server, and such content may be dynamic.  
+%
+%       You don't want to have to run the origin server under emulation --
+%       it's not doing any taint tracking.  So, instead, you can imagine 
+%       applying the taint at the network filter.
+%
+% If 
+
+
+
 
 
 
