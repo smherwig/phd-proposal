@@ -30,29 +30,13 @@ where the filesystems and memory of the container may span several
 domains, with each domain potentially cloaking parts of this space from the
 others.
 %
-Each domain runs their own instance of the monitor, with the assumption that a
+Each domain runs its own instance of the monitor, with the assumption that a
 domain trusts its version of the monitor, but not those of its peers.
 %
 In an environment with trusted boot, where parties can attest to trusted peer
-monitors, monitors can additionally enforce fine-grained IFC rules to detect
-incorrect behavior during an application's execution in an untrusted domain.
+monitors, a party can augment a peer's monitor so as to enforce fine-grained
+IFC rules to detect incorrect behavior during an application's execution.
 
-% Probably 3 or 4 is the right number to have.
-%
-% the idea is that the goals/properties should:
-%   - be justified; what's the benefit?
-%   - provide a rubric to later evaluate against -- was Gemini able
-%     to demonstrate fulfillment of such and such property?
-%
-% As a side effect, they should also help to focus the design, so that you can
-% can say "we do things this way and not that way in order to try to meet
-% property 3".
-%    \item The organization must not proxy calls for the provider.  %(practical)
-%
-% Ideas:
-%   - something about network access
-%   - soemthing about safety, liveness, or concurrency
-%   - something about full-system
 
 We describe the three major aspects of Gemini's design: (1) the monitor, (2)
 migration between domains, and (3) the security policy framework.
@@ -412,3 +396,53 @@ organization's private key.
 %
 Regardless, the firewall verfiies that the remaining response data is tagged as originating
 from the organization.
+
+
+\subsection{Tag Properties}
+
+\begin{widelist}
+\item \textbf{Unforgeable:}
+    %
+    A possible attack is that the provider adds its own module that taints data as
+    if it came from teh organziation, and so the data passes the organization's
+    polic monitor.
+    %
+    This threat implies that either the monitors maintain the secrecy of the tags
+    from the untrusted applications, or make them unforgeable.
+    %
+    The problem with maintaining tag secrecy is that tags may appear as metadata
+    attached to files and stream.
+
+\item \textbf{Irrevocable:}
+    %
+    If Gemini is running in a secure enclave, organization $A$ might have apply
+    a tag to it's enclaved private key that specifies that only a specific
+    piece of code is allowed to access the data.
+    %
+    Thus, it is necessary that organization $B$ be unable to remove $A$'s tag,
+    lest $B$ gain access to $A$'s private key.
+
+\item \textbf{Multiple tags per byte:}
+    %
+    As shown by the two examples above, there is need for the system to support
+    assigning multiple tags to a given byte.
+
+\item \textbf{Multiple tags per organization:}
+    %
+    As shown by the two examples above, there is need for the system to support
+    assigning multiple tags from the same organization.
+
+\item \textbf{Large tag space:}
+    %
+    Due to an HTTPS or DNS server simultaneously hosting many tenants, the
+    system most support a large tag space.
+\end{widelist}
+
+For space considerations, there is also the need to perform tag coalescing, as where
+many contigous bytes all share the same tag set.
+
+
+\subsection{Policy Interpreter}
+
+
+
