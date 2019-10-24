@@ -154,14 +154,10 @@ the degree to which the organization can leverage such deployments.
     \begin{tabular}{@{}lcccl@{}}
         & \textbf{Enclave}& \textbf{Provider} & \textbf{Software} & \textbf{Deployment} \\
         \hline
-        1 & \cmark          & \cmark            & \cmark          & standard    \\
-        2 &                 & \cmark            & \cmark          & standard    \\
-        3 & \cmark          & \cmark            &                 & nuanced     \\
-        4 &                 & \cmark            &                 & nuanced     \\
-        5 & \cmark          &                   & \cmark          & Conclaves   \\
-        6 &                 &                   & \cmark          & Gemini      \\
-        7 & \cmark          &                   &                 & out of luck \\ % sandbox in enclave
-        8 &                 &                   &                 & out of luck \\ % sandbox in partition
+        1 & \cmark          &                   & \cmark          & Conclaves   \\
+        2 &                 &                   & \cmark          & Gemini      \\
+        3 & \cmark          &                   &                 & out of luck \\ % sandbox in enclave
+        4 &                 &                   &                 & out of luck \\ % sandbox in partition
 \end{tabular}
 %}
 \caption{The deployment strategy, depending on whether the provider offers
@@ -189,7 +185,6 @@ and, in particular, may actively try to leak sensitive data.
 We assume, however, that the software is bug-free, and thus the model omits
 external actors, such as a remote attacker.
 %
-% TODO: what about components that proprieatry to the organization?
 The application may be composed entirely of open-source components, private
 components that are proprietary to the provider, or some combination thereof.
 %
@@ -203,27 +198,13 @@ Table~\ref{tab:trust-models}, shows the different possible trust models based
 on whether the provider offers hardware enclaves, whether the organization
 trusts the provider, and whether the organization trusts the provider's
 software.
-
-
-\parhead{Irrelevant Models}
-In models 1 and 2, the organization trusts both
-the provider and the software, and thus the application may be run in a
-conventional environment.
 %
-Models 3 and 4 are nuanced, as the organization trusts the provider, but not
-the software; the software itself might be proprietary, or simply too large for
-the organization to properly vet.
-%
-We choose not to focus on these models as they either disobey an assumption on
-the transitivity of trust (that is, a trusted provider deploying a non-trusted,
-proprietary, application), or speak to the case of running buggy software,
-the latter of which is both outside of our trust model and mitigated with
-existing sandboxing techniques.
+We omit the uninteresting cases with a trusted provider, with the assumption
+that the organization transitively trusts applications that the provider
+offers.
 
 
-% In the figure, use colors to show the models you treat in the thesis
-\parhead{Relevant Models}
-In model 5, the organization trusts the software, but does not trust the
+In model 1, the organization trusts the software, but does not trust the
 provider to run it faithfully, and thus uses one of various
 approaches~\cite{talos,haven,scone,graphene} to
 run an unmodified legacy application in an enclave.
@@ -231,15 +212,14 @@ run an unmodified legacy application in an enclave.
 This is the trust model for my prior work, conclaves, described in
 \S\ref{sec:conclaves-summary}.
 %
-In contrast, in model 6, an enclave is not available (or assumed vulnerable to
+In contrast, in model 2, an enclave is not available (or assumed vulnerable to
 to side-channnel attacks).
 %
-This is the starting use-case for Gemini, described in
-\S\ref{sec:gemini-design}.
+This is the starting use-case for Gemini, described in \S\ref{sec:gemini-design}.
 %
-In models 7 and 8, where neither the provider nor the software is trusted, no
-general prupose solution exists for an organization to securely use an
-unmodified, legacy, application.
+In models 3 and 4, where neither the provider nor the software is trusted, no
+general purpose solution exists for an organization to securely use an
+commodity applicatins.
 
 
 %For instance, the application may be composed of several components, some of
@@ -249,11 +229,11 @@ unmodified, legacy, application.
 In practice, Gemini's trust model is more nuanced, and the stringent
 black-or-white depiction of ``trusted" is too coarse.
 %
-For instance, it may be the case that most of the application is untrusted or
-otherwise proprietary, but the organization trusts a small portion of the
-application, such as its cryptographic library.
+For instance, it may be the case that most of the application is untrusted, but
+the organization trusts a small portion of the application, such as its
+cryptographic library.
 %
-This scenario is between models 6 and models 7 and 8, as the organization can
+This scenario is between models 2 and models 3 and 4, as the organization can
 identify a small trusted computing base within the application.
 %
 Gemini handles this scenario, with enclave availability and enclave trust
