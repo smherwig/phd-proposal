@@ -226,8 +226,10 @@ commodity applicatins.
 %which are trusted, and some are not; we assume that the organization
 %trusts the components that interact with the senstive data.
 
-In practice, Gemini's trust model is more nuanced, and the stringent
-black-or-white depiction of ``trusted" is too coarse.
+In practice, the model's binary characterization of ``trusted" is too coarse,
+the definition of untrusted as ``arbitrarily malicious" too strong,
+and the assumptions of bug-free code and attacker-free environments too
+naive.
 %
 For instance, it may be the case that most of the application is untrusted, but
 the organization trusts a small portion of the application, such as its
@@ -236,8 +238,13 @@ cryptographic library.
 This scenario is between models 2 and models 3 and 4, as the organization can
 identify a small trusted computing base within the application.
 %
-Gemini handles this scenario, with enclave availability and enclave trust
-treated as configuration details.
+Moreover, in the presence of attackers, an organization may simply
+want strong, physical, isolation of its sensitive data from a remote attacker.
+%
+In other words, trust is a spectrum; the model highlights the endpoints of the
+spectrums; my systems (conclaves and Gemini) target a specific endpoint, but,
+to varying degress, allow for the relaxation of assumptions.
+
 
 
 \subsection{Goals}
