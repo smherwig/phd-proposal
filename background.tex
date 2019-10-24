@@ -249,103 +249,49 @@ to varying degress, allow for the relaxation of assumptions.
 
 \subsection{Goals}
 
-Having reviewed the security implications of outsourcing services, as well as
-the pertinent trust models, I now describe a set of goals by which to evaluate
-solutions.
+Our high-level goal is to allow the user to specify a trust policy to the
+runtime execution environment; the runtime transparently implements the
+policy on behalf of the applications.
 %
-The goals fit into two categories: \emph{safety goals}, which follow closely
-from the security implications, and \emph{practicality goals}, which address
-the flexibility of the solution to handle varied trust models and to support
-commodify software.
+I break down the policies into two categories:
 
-\parhead{Safety Goals}
+\begin{widelist}
+\item \textbf{Confidentiality policies:} Specifications of isolation boundaries for
+    sensitive resources; the run-time constructs and enforces the boundaries.
+
+\item \textbf{Integrity policies:} Specifications for data integrity; the run-time
+    provides mechanisms for measuring integrity and detects breachs of
+    integrity.
+\end{widelist}
+
+
+Our primary constraint is that the runtime should not require applications to be
+rewritten or recompiled.
 %
-In the case of a server that uses TLS, safety goals increasingly diminish the
-adversarial powers of the provider to that of an on-path TLS attacker.
-
-\begin{enumerate}
-    \item[S1] \textbf{Protect private keys:}
-        %
-        Do not expose the organization's private keys to the provider.
-        %
-        Given that the servicr will still need use of the key, this goal alone
-        merely equates to the organization retaining the exclusive right to
-        revoke the key.
-    
-    \item[S2] \textbf{Protect session keys:}
-        % prevents low-resource attacks for leaking session key for decoding of the TLS traffic,
-        % for either offline or online analysis; also, prevents collusion where
-        % leaks to colluding party who then injects content.
-        %
-        Once a connection is established, do not expose the ephemeral session keys (nor
-        the sensitive material for session resumption) to the provider.
-        %
-        Protecting the TLS session keys does not in and of itself imply that
-        the provider does not observe the decrypted TLS streams; however, it does
-        prevent low-resource collusion whereby the provider leaks the keys to
-        an on-path party, who may then record and decrypt the streams or
-        inject malicious content.
-
-    \item[S3] \textbf{Protect TLS streams:}
-        %
-        The provider cannot observe the the plaintext of the TLS streams.
-        %
-        Note howerver, that the provider still manages the streams and has
-        control over the responses.
-
-    \item[S4] \textbf{Protect organization content:}
-        %
-        The provider cannot view or modify the organization's private content.
-
-    \item[S5] \textbf{Ensure correctness:}
-        %
-        Ensure that the provider is running the actual service as expected.
-
-\end{enumerate}
-
-
-\parhead{Practicality Goals}
+This is a practical constraint for system adoption, but also underscores our
+thesis that such policies are deployment-specific, may be unknown during the
+application's development, and must handle ``black box" applications, where the
+source code is unavailable.
 %
-The practicality goals enumerate concrete features that are favorable to a
-system's adoption.
+Our secondary constraint is that the policies should be simple; I want to avoid
+degenerate solutions where the specification of the policy is more
+onerous than simply rewriting the application.
 
-\begin{enumerate}
-    \item[P1] \textbf{Support legacy applications:} 
-        %
-        Support legacy binary applications; the system should not require
-        applications to be rewritten or recompiled.
+Additional practical constraints, with respect to outsourcing, is that the policies
+and runtime should handle applications that multiplex services across organizations,
+with strong isolation between the organizations.
+%
+The system should also avoid degenerate solutions
+that transfer undue hosting responsbilities back to the organization, thereby
+defeating the intent of outsourcing.
 
-    \item[P2] \textbf{Maintain outsourcing:}
-        %
-        Maintain the property that the provider hosts the majority of the computation,
-        and avoid degenerate solutions that transfer hosting responsbilities
-        back to the organization, thereby defeating the intent of
-        outsourcing.
 
-    \item[P3] \textbf{Allow configurable deployment and trust models:}
-        %
-        Solutions that depend exclusively on hardware enclaves are additionally
-        hampered by two realities.
-        %
-        First, while hardware enclaves have become more prevalant, they are by no means
-        ubiquitous; for instance, neither Intel SGX nor AMD-SEV---the two enclave
-        implementations for the x86\_64 architecture---are available on Amazon AWS\@.
-        %
-        Second, both implementations have, subsequent to their release, required
-        patches to address confidentiality-related vulnerabilities~\cite{foreshadow,
-        amd-sev-unprotected-io, severed}.
-        %
-        Based on this history, even if enclaves are available, the organization may be
-        unwilling to provision an enclave with sensitive data.
+Intuitively, the system will have worse performance than its vanilla
+counterpart.
+%
+Nevertheless, the system should allow introspection into performance bottlenecks
+as a means of investigating possible optimizations.
 
-    \item[P4] \textbf{Support multi-tenancy:} 
-        %
-        For provider services that muliplex
-        across multiple organizations, the system should support multiple
-        organizations, and with strong isolation between them.
 
-    \item[P5] \textbf{Maintain performance:}
-        %
-        Ideally, the performance of the system is similar to that of the vanilla
-        system.
-\end{enumerate}
+As non-goals, we are not concerned with obliviousness of the access paterns,
+which may be a side-channel vector.
