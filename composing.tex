@@ -1,8 +1,12 @@
-\section{Composing Gemini and Conclaves}
-\label{sec:composing}
+\section{Mixing Gemini and Conclaves}
+\label{sec:mixing}
 
-When talking about composing Gemini and conclaves, or, more generally, Gemini
-and secure enclaves, I am refering to one of three configurations:
+It may be possible to mix Gemini and conclaves for performance gains or
+deployment flexibility. 
+%
+By mixing, I am referring to composition (nesting the two execution
+environments), splitting (transfering between the two environments), and
+combintations thereof.
 
 \begin{widelist}
 \item \textbf{Enclaves(Gemini(app))} 
@@ -20,10 +24,10 @@ and secure enclaves, I am refering to one of three configurations:
     This solution is likely more applicable to AMD-SEV as opposed to Intel SGX
     enclaves.
 
-\item \textbf{Gemini((Enclaves)(app))} 
+\item \textbf{Gemini(Enclaves(app))} 
     %
     A nested execution environment where Gemini manages a collection of
-    enclaves: Gemini enforces infromation flow rules amongst the enclaves and
+    enclaves: Gemini enforces information flow rules amongst the enclaves and
     also enforces integrity policies on the data flows.
     %
     This solution is likely more applicable to an Intel SGX as opposed to
