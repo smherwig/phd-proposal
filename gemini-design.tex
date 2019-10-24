@@ -49,7 +49,9 @@ migration between domains, and (3) the security policy framework.
 % interesting policies that trusted hardware allows.
 
 
-\subsection{Monitors}
+\subsection{Gemini-0}
+
+\subsubsection{Monitors}
 %
 The monitor itself must simultaneously interpose on a process's execution while
 also ensuring consistent policy enforcement for shared resources, such as files
@@ -101,7 +103,7 @@ fairly simple: if a process attempts to access a page or a file pinned to
 another domain, the monitor initiates a migration of execution to that domain.
 
 
-\subsection{Execution migration}
+\subsubsection{Execution migration}
 
 Gemini migrates at the thread-level.
 %
@@ -282,7 +284,9 @@ an interesting area of future work is for the emulator to emit garbaled
 circuits when it detects such events.
 
 
-\subsection{Security policies}
+\subsection{Gemini-1}
+
+\subsubsection{Security policies}
 %
 There are two types of security policies: \emph{confidentiality policies} and
 \emph{integrity policies}.

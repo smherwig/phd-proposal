@@ -1,0 +1,54 @@
+\section{Composing Gemini and Conclaves}
+\label{sec:composing}
+
+When talking about composing Gemini and conclaves, or, more generally, Gemini
+and secure enclaves, I am refering to one of three configurations:
+
+\begin{widelist}
+\item \textbf{Enclaves(Gemini(app))} 
+    %
+    A nested execution environment where Gemini runs on top of an enclaved
+    operating system.
+    %
+    This is likely an optimization in that organizaitons may provision private
+    data to the environment, rather than rely on Gemini's execution migration.  
+    %
+    As opposed to just enclaves, this solution has the benefits of constraining
+    malicious behavior of untrusted applications via Gemini's integrity
+    policies.
+    %
+    This solution is likely more applicable to AMD-SEV as opposed to Intel SGX
+    enclaves.
+
+\item \textbf{Gemini((Enclaves)(app))} 
+    %
+    A nested execution environment where Gemini manages a collection of
+    enclaves: Gemini enforces infromation flow rules amongst the enclaves and
+    also enforces integrity policies on the data flows.
+    %
+    This solution is likely more applicable to an Intel SGX as opposed to
+    AMD-SEV enclaves.
+
+
+\item \textbf{Gemini(app) + Enclaves(app)):}
+    %
+    A split execution environment where the application migrates between the
+    two enviroments (or between compositions of the two environments).
+    %
+    For instance, under Gemini, a could process locally migrated into an Intel
+    SGX enclave.
+    %
+    This is likely an optimization over a simple composition of the two
+    environments.
+    
+
+    There is also a picojump-inspired use-case of moving sensitive code to data.
+    %
+    This use-case assumes that the data is too voluminous to transfer.
+    %
+    If the data is non-sensitive, no further work is needed; if the data is
+    sensitive, then the data machine may require that taint-tracking run within
+    the enclave, and apply egress filters on the the return migration.
+    %
+    This assumes that the enclaved process will not launder taint.
+\end{widelist}

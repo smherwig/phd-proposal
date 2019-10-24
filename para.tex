@@ -1,0 +1,13 @@
+\section{\emph{Para} Techniques for Conclaves and Gemini}
+\label{sec:para}
+
+TODO: If a developer knows that his applications is running in such an
+environment, are there any design choices a developer can make for, say, better
+performance or more flexible configurations?  Is this just a case of applying
+good engineering wrt to modularization and encapsulation, or are there any
+deeper insights?  Usually, the efficienty of these solutions comes from
+avoiding needless context switches.  So, with Gemini, you would look to hints
+that could prevent needless migrations or deadlock.  This might just be memory
+allocators.  Additionally, since the policy monitors have to decode the data
+(tls, parse), you might be able to have the application avoid some of this.
+
