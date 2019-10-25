@@ -72,28 +72,29 @@ is that it may be modified, partitioned, and distributed across domains of
 varying trustworthiness, so as to reflect the security goals.
 
 
-The design space is strongly influenced by two factors: the presence of trusted
-hardware, and the organization's trust in the application.
+The design space is strongly influenced by several factors: the presence of
+trusted hardware, the organization's trust in the application, and the
+mechanisms for defining and enforcing trust boundaries.
 %
-% Untrusted means the application may deviate arbitrarily from its stated
-% purpose, subject to standard cryptographic assumptions, and, in particular, may
-% actively try to leak sensitive data.
-%
-In my preliminary work, conclaves, I assume the presence of Intel SGX hardware
+In my preliminary work, \textbf{conclaves}, I assume the presence of Intel SGX hardware
 enclaves and that the organization trusts the service.
 %
 Conclaves extends prior work on SGX-based library operating systems (libOS) by
-modifying a libOS to support a broader set of legacy services: namely,
+extending a libOS to support a broader set of legacy services: namely,
 multi-process, shared resource, applications.
-
 %
-% Specifically, conclaves is distributed system reminiscent of a microkernel,
-% where each kernel service (for instance, a filesystem or shared memory)
-% runs in a separate enclave and mediates the service’s shared resources
-% among the application’s processes.
+My extensions result in a distributed system reminiscent of a microkernel,
+where each kernel service (for instance, a filesystem or shared memory)
+runs in a separate enclave and mediates that service’s shared resources
+among the application’s enclaved processes---effectively a \textbf{con}tainer
+of en\textbf{claves}.
+%
+With conclaves, the trust policy is code-centric, as the conclave owner
+specifies which processes comprise the system, as well as which processes may
+interact with one another.
 
 
-My proposed work, Gemini, treats trusted hardware availability and
+My proposed work, \textbf{Gemini}, treats trusted hardware availability and
 application trustworthiness as policy concerns.
 %
 Gemini is an execution environment that offers two complementary abstractions:
@@ -107,6 +108,11 @@ untrusted application.
 A key feature of policy monitors is that the policies express a specification
 for program correctness based on tracking information flows, which
 the monitor enforces at run-time.
+%
+With Gemini, the trust-policy is data-centric, as a party specifies which data
+must be isolated from other parties and how the data may flow within the
+system.
+
 
 This proposal is organized as follows:
 
