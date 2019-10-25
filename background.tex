@@ -265,23 +265,27 @@ I break down the policies into two categories:
 \end{widelist}
 
 
-Our primary constraint is that the runtime should not require applications to be
-rewritten or recompiled.
+\parhead{Constraints} 
 %
-This is a practical constraint for system adoption, but also underscores our
-thesis that such policies are deployment-specific, may be unknown during the
+The runtime must not require applications to be rewritten or recompiled.
+%
+This is constraint eases system adoption, but also underscores our
+thesis that policies are deployment-specific, may be unknown during the
 application's development, and must handle ``black box" applications, where the
 source code is unavailable.
 %
-Our secondary constraint is that the policies should be simple; I want to avoid
+A secondary constraint is that policy specification  must be simple; I want to avoid
 degenerate solutions where the specification of the policy is more
 onerous than simply rewriting the application.
 
-Additional practical constraints, with respect to outsourcing, is that the policies
+
+\parhead{Practical Considerations}
+%
+Particularly with respect to outsourcing, the policies
 and runtime should handle applications that multiplex services across organizations,
 with strong isolation between the organizations.
 %
-The system should also avoid degenerate solutions
+The runtime should also avoid degenerate solutions
 that transfer undue hosting responsbilities back to the organization, thereby
 defeating the intent of outsourcing.
 
@@ -289,9 +293,11 @@ defeating the intent of outsourcing.
 Intuitively, the system will have worse performance than its vanilla
 counterpart.
 %
-Nevertheless, the system should allow introspection into performance bottlenecks
-as a means of investigating possible optimizations.
+Nevertheless, the system should allow introspection into performance
+bottlenecks as a means of investigating possible optimizations.
 
 
-As non-goals, we are not concerned with obliviousness of the access paterns,
+\parhead{Non-Goals}
+%
+I am  not concerned with providing obliviousness to access patterns,
 which may be a side-channel vector.
