@@ -31,13 +31,13 @@ into what software is even implementing the service.
 %
 % XXX: the problem is larger than just running trusted software on an untrusted
 % host.
-Running trusted applications with strong security and privacy guarantees on untrusted
-third parties, and its dual, running untrusted applications within a
-trusted environment, is a large and active area of research; it spans uses of
-trusted hardware and functional encryption that seek to continue hosting
-applications completely on third parties, to (re-)designing applications and
-protocols so as to delegate trust, preserve privacy, or otherwise partition
-the application's execution across trust boundaries.
+Running trusted applications with strong security and privacy guarantees on
+untrusted third parties, and its dual, safely running untrusted applications
+within a trusted environment, is a large and active area of research; it spans
+uses of trusted hardware and functional encryption that seek to continue
+hosting applications completely on third parties, to (re-)designing
+applications and protocols so as to delegate trust, preserve privacy, or
+otherwise partition the application's execution across trust boundaries.
 %
 Unfortunately, this prior work either requires modifications to the
 application, or has severe limits on the types of unmodified applications
@@ -114,5 +114,24 @@ must be isolated from other parties and how the data may flow within the
 system.
 
 
-This proposal is organized as follows:
-
+This proposal is organized as follows: in \S\ref{sec:background}, I describe
+the problem setup, the threat model, and the system goals.
+%
+In \S\ref{sec:related}, I provide an overview of trusted execution
+environments (TEEs), and techniques for running legacy applications
+in TEEs.
+%
+I also describe techniques for data isolation and integrity that pre-date, or
+are otherwise orthogonal to, TEEs.
+%
+In \S\ref{sec:conclaves-summary}, I summarize my preliminary work,
+conclaves, and in \S\ref{sec:gemini-design} describe my proposed design for
+Gemini.
+%
+I describe a set of evaluations for Gemini in \S\ref{sec:gemini-eval}.
+%
+In \S\ref{sec:mixing}, I consider reasons and methods for mixing these two
+systems, and in \S\ref{sec:para} envision how developers would change
+applications if they knew that the application would run under such a system.
+%
+I conclude in \S\ref{sec:conclusion}.
