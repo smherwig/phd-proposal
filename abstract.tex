@@ -29,16 +29,25 @@ library operating system that runs within an Intel SGX secure hardware
 enclave, so as to support running a broader set of trusted, legacy,
 applications in untrusted environments.
 %
-In the second part, I propose a new run-time system, \emph{Gemini}, that is
-agnostic to the availability of secure hardware and the trustworthiness of
-the application.
+In the second part, I discuss my proposed work, an operating system abstraction
+that I call \emph{codomains}. 
+%    
+Codomains maintain the source-level abstraction of a monolithic program, but
+allow applications to, dynamically and at run-time, switch exeuction to
+different domains---hosts and enclaves---via language-neutral mechanisms.
 %
-Gemini presents two complementary abstractions: \emph{distributed containers},
-where organizations pin sensitive data to domains that they trust, and
-\emph{policy monitors}---modules that an organization installs in a trusted
-environment to enforce expected behavior of untrusted applications.
+Within a domain, the application may pin data as only accessible to the domain
+itself, or to a subset of peer domains.
 %
-I present the design of Gemini and propose a set of evaluations for assessing
-its correctness and performance.
-
+In contrast to my prior work, \emph{codomains} are not strictly dependent on
+secure hardware, but may use such hardware, if available.
+%
+I present the design of \emph{codomains},  and propose a set of evaluations for
+demonstrating their use-cases, as well as assessing their semantic
+correctness and performance.
+%
+Although codomains require some application source-level changes, I discuss
+application interposition techniques to remove this requirement.
 \end{abstract}
+
+
