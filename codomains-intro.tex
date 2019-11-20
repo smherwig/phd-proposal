@@ -1,0 +1,66 @@
+\section{Codomains Introduction}
+\label{sec:codomains-intro}
+
+% the problem setup
+
+When we build an application that requires the participation of mutually
+distrustful parties, our choices are: 
+%
+\begin{enumerate}
+    \item Run the entire application in a secure execution environment, such as
+        a hardware enclave, or via translation to an MPC program.
+
+    \item Distribute the application;  each party locally executes
+        their sensitive piece of the computation.
+
+    \item Hybrid, ``mix-mode", schemes whereby each party locally executes
+        their sensitive piece of the computation, and jointly invoke a secure
+        enclave or MPC scheme for computations that combine the parties'
+        sensitive data.
+\end{enumerate}
+
+
+Our focus is designing and implementing operating system abstractions 
+that enable developers to write such hybrid applications as if they were
+monolithic, local applications.
+%
+This motivation is not conceptually different from that of 
+remote procedure calls (RPCs):  with RPCs, developers code their applications
+using the familiar procedure call, but the calling process and the
+process containing the procedure being called execute on different
+hosts.
+%
+To the application proper, the fact that the call involves cross-host I/O
+is mostly transparent.
+%
+In our setting, the system abstractions define party-local and multi-party
+secure computations, and the underlying system manages moving the execution
+between the computation domains, maintaining resource consistency across
+domains, and restricting information flow among domains.
+
+
+
+As with RPCs, prior work in this area endeavors to hide the details of the
+resultant distributed system from the application developer.  
+%
+Projects such as privtrans and Glamdring use developer-provided source code
+annotations and static analysis to assist the compiler in partitioning the
+monolithic application into separate programs.
+%
+In contrast, Fabric, Wysteria, and secure goroutines expose partitioning as
+first-class language constructs, whereby developers programmatically indicate
+which statements execute in a specific domain, and what data is accessible to
+that domain.
+%
+In these systems, a trusted language runtime enforces isolation between
+domains.
+
+
+Similar to prior work, we want to maintain the source-level abstraction of
+a monolithic program, but allow for dynamic, at run-time, mode switches.
+%
+Morever, we want to present a language-neutral mechanism for switching modes.
+%
+If mode-switching is dynamic and language-neutral, then orthogonal, application
+interposition techniques, may be layered onto the system to increase the
+transparency of the multi-domain environment with respect to the application.

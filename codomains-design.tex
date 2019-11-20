@@ -1,0 +1,449 @@
+\section{Codomains Design}
+\label{sec:codomains-design}
+
+Our goal in this section is to explore the concept of cooperating execution
+domains to arrive at an application programming interface (API)
+for developing programs for such an execution model.
+%
+The core abstractions are pinning data to a domain and switching (migrating)
+between domains, while the core challenges are providing resource
+consistency and mechanism transparency.
+
+
+\subsection{Coprocesses}
+
+We first introduce the concept of a coprocess, its properties, and a
+prospective API\@.
+%
+Abstractly, a coprocess is a process to which a client process yields its
+execution.
+%
+By itself, this is not a novel idea: the \texttt{ptrace} system call allows one
+process to control considerable aspects of another, while
+\texttt{userfaultfd} allows one process to service another's page faults.
+%
+Orthogonally, runtime loading techniques, such as \texttt{LD\_PRELOAD}, enable
+shims for proxing a process's library calls.
+
+
+Our interest with coprocesses is handling, in userspace, services requisite to
+codomains: distributed shared memory, distributed fileystems, and the
+checkpointing and restoring of the client process, while further enabling both
+explicit and implicit yields to these services.
+%
+In these respects, a coprocess is similar to a library operating system, but
+one that operates in an address space distinct from its client process: instead of
+trapping directly to the kernel, the process traps to its coprocess, which may
+either service the trap on its own, or forward the trap to the kernel.
+
+
+\parhead{Coprocess API}
+%
+In Listing~\ref{lst:coproc-api}, we present the coprocess API\@.
+%
+The API design presents the coprocess as an ambient service to the process
+(similar to the kernel), abstracting away any details, or even notion, of IPC
+between the coprocess and process.
+%
+A process becomes a coprocess by calling \texttt{coproc\_create}, whose
+argument is a unique pathname identifying the coprocess, and whose return value
+is a socket-like descriptor for communicating with future client processes.
+%
+A client process attaches to a coprocess by calling \texttt{coproc\_set}, passing as an
+argument the path representing the coprocess.
+%
+A process may have at most one coprocess, and a coprocess may service multiple
+processes.
+%
+A processes's coprocess, and the state of being a coprocess, are attributes
+within a process's control block.
+
+
+Up until this point, a library based on UNIX domain sockets would perfectly emulate the
+coprocess API\@.
+%
+The distinctive, non-emulatable, component of the API is \texttt{coproc\_yield},
+which suspends the calling process's thread and yields the process's execution
+state to the coprocess.
+
+\begin{lstlisting}[
+    frame=single, 
+    caption={Coprocess API},
+    captionpos=b,
+    label={lst:coproc-api},
+]
+int coproc_create(const char *path)
+int coproc_set(const char *path)
+int coproc_call(int msgtype, void *args, void *result)
+void coproc_yield(void *args)
+\end{lstlisting}
+
+In the sections that follow, we discuss how codomains are implemented as
+a library on top of the coprocess API.
+
+
+\parhead{Coprocess Server}
+%
+Before delving into codomains, consider how switching execution between domains
+would appear at the coprocess-level.
+%
+A process in domain A sets a coprocess and yields execution.
+%
+The coprocess checkpoints the process's thread and then makes a remote request
+to a service in domain B\@.
+%
+B's service may either be a coprocess, or a service that executes a new
+coprocess.
+%
+Regardless the service must also execute a stub program that first attaches to the
+coprocess and then launches a loader that restores A's thread.
+%
+Any page faults during the restoration process trap to the coprocess on B,
+which may request the page from the coprocess on A.
+
+
+\subsection{Codomains}
+
+In Listing~\ref{lst:isolating-key}, we start with a single-threaded, two-party
+example in of isolating private key operations to a single domain,
+\texttt{domain\_priv}; all other parts of the applications execute in the
+initial domain, \texttt{domain\_pub}.
+
+\begin{lstlisting}[
+    frame=single, 
+    caption={Isolating a private key to a domain},
+    captionpos=b,
+    label={lst:isolating-key},
+    numbers=left,
+    numberstyle=\tiny,
+    xleftmargin=2em,
+    framexleftmargin=1.5em,
+    ]
+int domain_priv;
+int domain_pub;
+char *key;
+
+load_key(path) {
+    domain_pub = co_switch(domain_priv)
+    key = read_file(path)
+    co_mempin(key)
+    log(log_fd, "loading key (%s)", path)
+    co_switch(domain_pub)
+    return key;
+}
+ 
+sign(key, buf, buflen) {
+     domain_pub = co_switch(domain_priv)
+     signature = do_sign(key,buf)
+     log(log_fd, "signed something");
+     co_switch(domain_pub)
+     return signature; 
+ }
+
+main(int argc, char *argv[]) {
+    coproc_set("/srv/foo.coproc");
+    domain_priv = co_attach(url, rspec)
+    load_key(argv[1])
+    sign(key, argv[2], strlen(argv[2]))
+}
+\end{lstlisting}
+
+
+The process starts in \texttt{domain\_pub}.
+%
+The process sets its coprocess on line 23, and then attaches to 
+\texttt{domain\_priv} on line 24.
+%
+The \texttt{url} argument to \texttt{co\_attach} specifies the coprocess server
+for \texttt{domain\_priv}, and \texttt{rspec} describes the resources (such as
+filesystem, open descriptors, memory pages) that \texttt{domain\_pub} exports
+to \texttt{domain\_priv}.
+%
+Internally, \texttt{co\_attach} invokes \texttt{coproc\_call} to initiate the
+connection.
+%
+The return value of \texttt{co\_attach} is a descriptor for the attached
+domain; the descriptor only has meaning to the coprocess, and is not present
+in the process's kernel-level file descriptor table.
+
+
+On line 25, the process calls \texttt{load\_key}, which then invokes
+\texttt{co\_switch} to switch to \texttt{domain\_priv}.
+%
+Internally, \texttt{co\_switch} invokes \texttt{coproc\_yield} to checkpoint
+the thread on \texttt{domain\_pub} and restore the thread on
+\texttt{domain\_priv}.
+%
+\texttt{co\_switch} returns a descriptor representing the domain that
+initiated the switch.
+
+
+Within \texttt{load\_key}, \texttt{domain\_priv} pins the memory pages storing
+the private key by invoking \texttt{co\_mempin};
+such pages are cloaked when executing in another
+domain, and uncloaked when a thread executes in the caller's domain.
+%
+Internally, \texttt{co\_mempin} invokes\texttt{coproc\_call}, as the
+coprocess is responsible for how the memory itself is labeled.
+%
+In Listing~\ref{lst:isolating-key}, the \texttt{load\_key} and \texttt{sign}
+functions perfectly encapsulate the key's use, and thus  \texttt{co\_switch}
+simply ``wraps" their invocation.
+
+
+When a domain accesses a cloaked page, the result is a fault to the process's
+coprocess.
+%
+The coprocess either treats the fault as a segmentation fault (likely
+terminating the process), or as a page fault.
+%
+In the latter case, the coprocess handles the page fault by moving execution to
+the domain of the page owner, as if the application implicitly called
+\texttt{co\_switch}.
+%
+The application dictates fault semantics via \texttt{rspec}
+when attaching to the codomain.
+
+
+% XXX: compare to 9p protocol: http://man.cat-v.org/plan_9/5/intro
+\begin{lstlisting}[
+    frame=single,
+    caption={Codomain API},
+    captionpos=b,
+    label={lst:codomain-api},
+]
+int co_attach(char *url, struct co_rspec rspec)
+int co_switch(int fd)
+int co_getrspec(int fd, co_rspec *rspec)
+int co_setrspec(int fd, co_rspec *rspec)
+\end{lstlisting}
+
+
+
+\parhead{Resource sharing and consistency}
+%
+In the \texttt{load\_key} function of Listing~\ref{lst:isolating-key}, the
+application calls \texttt{read\_file} on line 7,
+which opens a file, reads in the contents, and then closes the file.
+%
+Suppose \texttt{domain\_pub} first tested if \texttt{path} existed;
+would that test succeed?  
+%
+Beyond this simple example, suppose that \texttt{domain\_priv} created a
+file; would \texttt{domain\_pub} be able to view it? 
+%
+
+% XXX: you need the prpocess on B to call co_setrspec() before execve() to
+% specify the resources.
+
+%
+In Listing~\ref{lst:isolating-key}, the domains do not need to share the filesystem:
+\texttt{domain\_pub} and \texttt{domain\_priv} have completely separate
+filesystems, and path names may even clash between the two.
+
+
+
+Similar issues exist for file descriptors.
+%
+For instance, in the example, \texttt{log} writes the log statements to a log
+descriptor.
+%
+This descriptor could represent a terminal, a file, or a socket.
+%
+We may want the write to proxy the call back to \texttt{domain\_pub} (which
+would be necessary in the socket case), or to perform the write locally, as by
+``migrating" the underlying resouce from \texttt{domain\_pub} to
+\texttt{domain\_priv} (which may be more appropraite for the terminal case).
+%
+In other words, \texttt{rspec} not only needs to say which resources
+are shared, but also how they are shared.
+
+
+In Listing~\ref{lst:codomain-api}, we present the complete codomain API\@.
+
+
+\parhead{Distributed Shared Memory}
+%\parhead{Multi-Threaded}
+%
+What happens in a multi-thread (or multi-process/shared memory), two-party
+example.  
+%
+The core issue is that a thread on \texttt{domain\_priv} might be making changes to
+the address space (cloaked or non-cloaked), and these changes must be
+consistent with the threads on \texttt{domain\_pub}.
+%
+For instance, even in the key loading example, \texttt{domain\_priv} is
+potentially allocating memory and then cloaking memory for the private
+key---threads on \texttt{domain\_pub} must be aware of such address space
+changes.
+%
+Similarly, threads on both domains may be interacting over shared memory.
+%
+This necessitates some form of distributed shared memory.
+
+
+
+\parhead{Federated (Parallel)}
+%
+% TODO: give a code listing of a simple federated algorithm, such as private
+% set intersection, or the millionaires problem.
+%
+For federated use cases, it is useful to have some notion of parallel
+execution
+%
+In such cases, there's no need for DSM; each migrated thread can have it's own
+private address space and own file system.
+%
+In this case, each thread passes back the results to the \texttt{domain\_pub}
+as a return value, of sorts, rather than in shared memory.
+
+
+In some cases, we want the reutrn vlaue to be blinded, as \texttt{domain\_pub}
+will take the return values of from all the private domains and feed them into
+an enclave for some private operation (such as private set intersection).  
+%
+A simple, perhaps naive approach, would be that the private domains encrpyt the
+output using the public key of the enclave's domain.
+%
+This then brings up the question of how domains know of the existence of other
+domains; in particular, must ``capabilities" for other domains be passed in the
+\texttt{rspec}.
+
+
+\begin{lstlisting}[
+    frame=single,
+    label={lst:lwc-parallel},
+    numbers=left,
+    numberstyle=\tiny,
+    xleftmargin=2em,
+    framexleftmargin=1.5em,
+]
+int snapfd;
+
+thr_func(worker_fd) {
+    main_fd = co_switch(domain_fd)
+    val = lwcswitch(snapfd)
+    co_switch(main_fd);
+    return val
+}
+
+main() {
+    enclave_fd = co_attach()
+
+    snapfd = lwccreate()
+    if (snapfd != -1) {
+        open("data.dat");
+        val = do_work()
+        encrypt_to_enclave(val)
+        lwcswitchdicard(val);
+    } 
+
+    for 1 to N:
+        pthread_create(thr_func, worker_fd)
+            
+    vals  = join_all_threads()
+     
+    main_fd = co_switch(enclave_fd)
+    sum = secure_sum(vals)
+    co_switch(main_fd)
+}
+\end{lstlisting}
+
+
+\subsection{Enclaves as Codomains}
+\label{sec:enclaves-as-codomains}
+% TODO: it will be non-obvious to the audience how this would even work,
+% so briefly sketch the design.
+
+
+
+\subsection{Data-Directed Switching}
+\label{sec:data-directed-switching}
+
+There are two cases where, rather than explicitly calling
+\texttt{co\_switch}, a party needs a process to implicilty invoke
+\texttt{co\_switch}: (1) the private data cannot be encapsulated in a
+functional interface, and (2) the application is a black-box; the
+party's only knowledge of the application is that it requires a private input,
+say a file.
+
+
+The idea is that files are marked as pinned in \texttt{rspec}; access to the file faults the
+thread to the owner domain, which then uses taint-tracking to determine the
+propagation of the file's sensitive data throughput memory.
+%
+As memory is tainted, the taint-tracker invokes \texttt{co\_mempin} to 
+
+
+pages that should be tainted.
+%
+The thread then migrates back when attempting to access some data pinned by
+another domain, or after so many instructions have occurred sequentially over
+non-pinned data.
+
+
+The issue that comes up is that, in order to make progress, there needs to be
+declassification of pinned data; for instanace, a signature would be marked as
+pinned by taint-tracking, but must be declassified.
+%
+This requires, in some form, hooking the returns from such functions.
+%
+In a way, this a form or \emph{half-wrap} in that the domain conceivably could
+be migrated to at any point, but has well defined exit points and exit
+conditions.
+
+
+
+\subsection{Potentional Issues}
+
+We need to be aware of deadlock arising from join computations over resoures
+pinned by distinct domains.
+%
+This is likely a programming error, as such computations should occur in a
+secure enclave.
+
+
+
+% TODO: for MEM_PIN_SWITCH, what is the resource_spec?
+
+% TODO: how is the pinned domain marked in the page table?  (a unique
+% memory protection key):.
+
+% TODO: what does the target argumet to switch() look like?  In other words,
+% how are domains represented form the application's point of view?
+%
+%
+% TODO: what would happen if the filesystem needed to be shared?
+%
+% TODO: what happens if pinned data is written to a descriptor/file?
+
+
+
+% TODO: try to translate switch() into a "remote" lwc:
+%  
+%   fd = lwccreate(resource_spec)
+%   ret = lwcswitch(fd)
+%   if (parent):
+%       switch
+%       migrate
+%   else:
+%       
+
+%   Antoher issue is that reads and writes to the file must subsequently be
+%   kept in sync with any toher processes using that file on src. 
+%    
+% - What happens if dst tries to read/write a descriptor that was opened on src?
+%
+%   Similar situation where the file either needs to migrate to dst or the
+%   calls proxied.
+%
+%   You can think of migrate() of being like a fork, and specifing which file
+%   descriptors are kept open and which are closed across the join.  Or similar
+%   to the mem_pin, src would pin the desripotrs, saying that access should
+%   either fault, migrate back, or be proxied.
+%
+%   For the crypto and federated examples, there's no need for sharing
+%   filedescriptors and files.
+% 
+%   - suppose domian_priv forgot to close the file descriptor as part of
+%     read_file -- would that descriptor then be open in domain_priv?

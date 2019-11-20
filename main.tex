@@ -8,6 +8,7 @@
 \usepackage{csquotes}
 \usepackage[margin=1in]{geometry}
 \usepackage{graphicx}
+\usepackage{listings}
 \usepackage{multirow}
 \usepackage{pifont}
 \usepackage{tabularx}
@@ -15,6 +16,15 @@
 \usepackage[usenames,dvipsnames,table]{xcolor}
 \usepackage{xspace}
 \usepackage{url}
+
+\definecolor{cream}{RGB}{254,249,231}
+\lstset{
+    backgroundcolor=\color{cream},
+    breaklines=true,
+    basicstyle=\ttfamily\footnotesize,
+    keepspaces=2,
+    escapeinside={(*@}{@*)},
+}
 
 \newcommand{\parhead}[1]{\medskip \noindent \textbf{#1}~~}
 \newenvironment{widelist}{\begin{list}{$\bullet$}{\setlength{\leftmargin}{.40cm}\setlength{\itemsep}{.00cm} }}{\end{list}}
@@ -24,9 +34,9 @@
 \newcommand{\name}{Phoenix\xspace}
 \newcommand{\Name}{Phoenix\xspace}
 
-\title{Pisces}
+\title{PhD Proposal}
 \author{Stephen Herwig}
-\date{July 2, 2019}
+%\date{July 2, 2019}
 \begin{document}
 \maketitle
 \input{abstract}
@@ -34,10 +44,10 @@
 \input{background}
 \input{related}
 \input{conclaves-summary}
-\input{gemini-design}
-\input{gemini-eval}
-\input{mixing}
-\input{para}
+\input{codomains-intro}
+\input{codomains-background}
+\input{codomains-design}
+\input{codomains-eval}
 \input{conclusion}
 
 \bibliography{confs_long,main}

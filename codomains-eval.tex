@@ -1,0 +1,118 @@
+\section{Codomains Evaluation}
+\label{sec:codomains-eval}
+
+\subsection{Correctness}
+%
+I need to ensure that a process running on Gemini shows the correct behavior
+(program correctness), the isolation of pinned data (security correctness), and
+the accuracy of the firewall rules (again, security correctness).
+%
+Pragmatically, this amounts to writing unit tests.
+%
+Additionally, it may involve showing generality by, for instance, instrumenting
+more than just OpenSSL (the macro-benchmarks can also help to show generality
+at the application-level).
+%
+For demonstrating data isolation, you might have an external program that just
+dumps and scans a process's memory for a given byte string.
+
+
+% TODO: try to think of a few correctness conditions, and what the unit test
+% would look like for each one.  You might also consider tests for different
+% application models, such as a single-threaded vs multi-threaded, vs
+% multi-process application.
+
+
+\parhead{Fault-injection tests}
+%
+TODO: purposefully try to send packets that do not pass the tag-aware packet
+filters and verify that the filters prevent the transmission.
+
+
+\subsection{Performance}
+
+\subsubsection{Micro-benchmarks}
+
+\parhead{What is the overhead of migration?}
+% The idea is:
+%   - understand the mechanics of migration and "profile" each of its steps.
+%       - this might point out certain optimizations
+%   - compare to alterntavies
+%       - to understand tradeoffs/overheads compared to alternatives
+%
+Suppose a thread migrates to a target machine that has pinned a private key in
+order to compute a signature with that key.
+%
+At the network level, how would a packet capture of the migration compare to
+that of an alternative RPC-based implementation, such as keyless SSL\@?
+%
+In particular, how much traffic and how many round-trips does migration incur,
+what is the purpose of each round-trip, and what is the corresponding ratio of
+goodput to throughput?
+%
+Moreover, is each migration identical?
+
+
+Closely related to the previous question, we seek to measure the latency of
+migration and the related operations.
+%
+Direct overhead costs include network latency, while indirect costs include the
+operations of checkpointing and restoring threads, as well as any TCP queuing
+delays incurred by the source machine while its threads are paused, waiting for
+the migration to return.
+
+
+\subsection{Experiments}
+
+We measure the performance of several $n$-party example programs of our own
+design and drawn from the literature.
+%
+The \emph{richest} protocol copmutes the richest principal.
+%
+The \emph{GPS} protocol computes, for each participating principal, the other
+principal that is nearest ot their location; everyon learns their nearest
+neighbor without knowning anyone's exact location.
+%
+The \emph{Auction} protocol computes the high bidder among a set of
+participating principals, as well as teh second-hgihest bid, which is revealed
+to everyone; only the auction holder learns who is the winning bidder.
+%
+
+
+
+\subsubsection{Macro-benchmarks}
+
+% nginx: apachebench
+% bind, knot DNS, nds: dnsperf
+% exim, postfix, qmail, sendmail: smtp-source
+%
+Give our use-cases of an HTTPS, DNS, and mail server, we stress test an
+implementation of each server running in a standard Linux environment, and
+compare request throughput and latency to the server running on top of Gemini.
+%
+Specifically we stress test the NGINX webserver using ApacheBench, the BIND DNS
+server using \texttt{dnsperf}, and the postfix mail server using
+\texttt{smtp-source}.
+
+
+For each server, we benchmark several deployment scenarios.
+%
+In particular, does the deployment have only the organization pinning data (one
+or more private keys), or does the service provider itself also pin data (such
+as a spam or web application firewall rules).
+%
+In the former case, only the organization runs a process-monitor.
+
+
+Furthermore, does the service support only one organization, or multiple?
+%
+For instance, the NGINX webserver can virtually host many sites, and thus,
+under Gemini, could migrate to different organizations based on the request.
+%
+The application server might also support different server models, such as
+multi-process or multi-threaded.
+%
+In a multi-process, multi-tenant configuration of NGINX, each worker process
+is single-threaded and could migrate to a different organization
+simultaneously, whereas in a multi-threaded configuration, only a single thread
+could migrate away from the service provider any time.

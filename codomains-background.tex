@@ -1,0 +1,206 @@
+\section{Codomains Background}
+\label{sec:codomains-background}
+
+\subsection{Applications}
+
+We focus on two use cases that involve multiple parties cooperatively running
+an application where the input of at least one party is confidential:
+(1) outsourcing TLS-based applications to a third party, and (2) federated
+analysis over private data.
+
+
+\parhead{Outsourcing TLS applications}
+%
+In this setup, a company uses a third party, such as a cloud host or cloud
+service, to operate an application server, such as for web, DNS, or mail.
+%
+Operationally, the status quo is for the company to shares or otherwise entrust
+the third party with the application's private keys.
+%
+This has significant implications on the trust model of the PKI and the web
+writ large, as these third parties can arbitrarily impersonate any of their
+customer organizations.
+%
+Our goal is to design system primitives that allow developers to write or
+patch, and deployers to configure, such applications with the property that the
+company retains exclusive custody of its private keys.
+
+
+\parhead{Federated Data Processing}
+%
+In this setup,  the aggregate dataset consists of the confidential, local,
+datasets of multiple parties.
+% 
+The parties themselves might be mutually distrustful, or may simply be
+prevented by law from sharing their data.
+%
+An analyst wants to process the datasets to determine some non-confidential
+result.
+%
+With federated databases, the result may be the cardinality of an intersection
+across the datasets.
+%
+With federated learning, the result may be the global model parameters (such
+as the weights of a deep neural network), derived from the aggregation of the
+parameters from each party's locally-trained model.
+%
+Our goal is to enable the developer to express, in a
+single program, the multi-party nature of the application, with the underlying
+system managing the application's distribution across parties. 
+
+
+While our system will present an interface for partitioning the application
+across the parties, partitionioning alone does not prevent private data
+leakage.
+%
+For instance, local results and parameters may, by themselves, reveal
+information about the private data samples.
+%
+Thus, orthogonal to our system, the application may additionally require
+methods for achieving differential privacy, such as by adding a carefully
+chosen amount of noise to the local results.
+
+
+
+%Within the realm of secure, federated data processing, the need for differential
+%privacy is virtually unavoidable, as local results and parameters may, by
+%themselves, leak information about the underlying data samples.
+%%
+%Differential privacy (DP) is a property of randomized queries that take a
+%database as input and return a statistical result, such as an aggregate.
+%%
+%The database is a collection of rows, with each row containing data
+%from one individual.
+%%
+%Informally, queries are differentially private if arbitrary changes to a single
+%individual’s row result in only statistically insignificant changes in the
+%function’s output distribution. 
+%%
+%Thus, the presence or absence of any individual has a statistically negligible
+%effect.
+%%
+%Practical solutions for achieving DP typically rely on adding a carefully
+%chosen amount of noise to the result.
+%%
+%DP offers a provable bound on the amount of information that an adversary can
+%learn about any individual, even with access to auxiliary information
+
+
+% DP Definition
+%
+%Differential privacy (DP): by
+%disallowing certain qeuries and carefully adding a chosen amount of noise to
+%the result of others, it is possible to give a strong upper bound on how mcuh
+%an adversary could learn about an invididual person's data.
+%
+
+
+% such as an aggregate statistical value, or to learn the parameters to
+%a machine learning model trained across the datasets.
+
+
+%%%% FEDERATED LEARNING
+%
+%Federated Learning (FL) trains an algorithm across
+%multiple principals holding local, confidential, data samples, thereby allowing
+%the principals to build a common machine learning model withouth
+%sharing their data.
+%%
+%%
+%As local parameters may, by themselves, leak information about the underlying
+%datasamples, FL may further incorporate DP or secure aggregation.
+
+
+%DStress is a system that can efficiently perform computations on graphs taht
+%contain confidential data. Dstress assumes that the graph is physically
+%distributed across many participants, and that each participaint only knows a
+%small subgraph; it protects privacy by enforcing tight, provable limits on how
+%much each participant can learn about the rest of the graph.
+%
+%The motivating usefaul is measuring systemic risk in financial networks. The
+%requried information is extrmeemly sensisive because it directly reflects the
+%business strategy of each bank.
+%
+%It is well known taht many interesting thnigs can be learned by collecting and
+%analyzing large graphs. Tools assume that the user has a property Graphen G
+%(that is, a graph that has some data asscoiated with its vertixes and/or edges)
+%and wishes to compute com function F(G) over this graph and itsp roperites.
+%
+%However, there is another class of use cases where the graph G contians
+%sensitvie information and is spread across multiple administratigve daomins. In
+%this situation, each domain knows only a subset of the vertexes and edges, so
+%it cannot compute F(G) on its own, but the domains may not be willing to share
+%their data with each other because of privacy concerns.
+%
+%
+%DStress support vertex programs; it addresses the first challenge with a
+%special graph-computation runtime tha can execute vertex programs in a
+%distributed fashion, using MPC and a varint of ElGamal encryption
+%(homomorphic for transferring data between domains, and it addresses the
+%second challenge by keeping intermediate results encrypted at all times, nad by
+%offering differential privacy on the final result.
+%
+%Our approach is based on two key insights. Our first observation is that much
+%of the enormous cost of the MPC-based strawman comes from the fact that the
+%graph is itself confidential and therefore must be an input to the computation.
+%We can get around this by fomrulating the funciton F as a vertex program – that
+%is, as a sequence of comptuations at each vertex that are interlevaed with
+%message exchagnes over the edges – and by executing it in a distributed
+%fashion. The main challenge is to prevent information leackage thorugh
+%intermediate results. In DStress, we asccomplish this with a combination of
+%secret sharing, small MPC invocations for the computations at each vertex, and a
+%special protocol for transferring shares without revelaing the topology of the
+%graph. our second key insight is that we can use differential privacy to
+%achieve output privacy.
+
+
+\subsection{Threat Model}
+
+We assume an honest but curious (HbC) threat model: each party faithfully
+executes the program, but may analyze their portion of the execution to try to
+recover the private data of other principals.
+%
+We assume that the parties trust the application; that is, the application does
+not deviate abitrarily from its stated purpose, and does not actively try to
+leak sensitve data.
+%
+We assume that the application is bug-free, and thus our model omits external
+actors, such as a remote attacker.
+
+
+An HbC model is not inherent, but is reasonable for our use cases,
+given the mutually beneficial incentives among the parties, and further
+simplifies the system design.
+%
+Consider, in contrast, a more adversarial model where the parties, or the
+application itself, may abuse the interface for domain switching---as by
+switching at an unexpected state, or switching to a malicious code page---for
+the purpose of actively leaking sensitive data. 
+%
+In this model, the target domains must first, externally, validate the
+execution state against an expected starting condition before commencing
+execution.
+
+
+An interesting design point related to the threat model is whether the
+application is globally public, or whether some portions are private and thus
+confidential to a party. 
+%
+For instance, in the scenario of a company outsourcing a web server to a CDN,
+the CDN's web server may be proprietary, and the CDN operator in turn may be
+unwilling to allow the server's execution to switch to a company's domain
+for fear of leaking proprietary knowledge.
+%
+Naively, this scenario reduces to specifying that private code pages should be
+pinned to the owning domain, and that execution may switch domains only at
+non-private points in the application's execution.
+%
+The tricky aspect is that the data written by private code pages should,
+likewise, be private, as sharing such data pages could reveal aspects of
+the private code.
+%
+We consider this feature as future work, but briefly revisit the idea in
+\S\ref{sec:data-directed-switching}.
+
+
+Typical of other work in this area, we consider side-channels out of scope.
