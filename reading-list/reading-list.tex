@@ -1,11 +1,10 @@
 \section{Classic}
-% classic systems, operating systems, and security papers
-% TODO: perhaps a classic DSM paper
+% todo: I haven't read all of these; make sure they are appropriate.
 
 \begin{enumerate}
 \item  Saltzer, J., Reed, D., and Clark, D. End-to-end arguments in system design. ACM Transactions on Computer Systems 2, 4 (Nov. 1984).
     % \cite{e2e-argument}
-\item Liedtke, J. On micro-kernel construction. In ACM Symposium on Operating Systems Princi- ples (SOSP) (1995).
+\item Liedtke, J. On micro-kernel construction. In ACM Symposium on Operating Systems Principles (SOSP) (1995).
     % \cite{micro-kernel-construction}
 \item  Pike, R., Presotto, D., Dorward, S., Flandrena, B., Thompson, K., Trickey, H., and Winterbottom, P. Plan 9 from Bell Labs, 1995.
     % \cite{plan9}
@@ -28,7 +27,8 @@
 
 
 \section{Secure/Isolated Execution}
-% others: \cite{scone}
+% could add: \cite{scone}
+% could remove: \cite{overshadow}, \cite{flicker}, \cite{lwcs}
 
 \begin{enumerate}[resume]
 %\setcounter{enumi}{1}
@@ -40,7 +40,7 @@
 	%\cite{foreshadow}
 \item Hunt, T., Zhu, Z., Xu, Y., Peter, S., and Witchel, E. Ryoan: A distributed sandbox for untrusted computation on secret data. In Proceedings of the 12th USENIX Conference on Operating Systems Design and Implementation (2016), Symposium on Operating Systems Design and Implementation (OSDI).
     %\cite{ryoan}
-\item Chen, X., Garfinkel, T., Lewis, E. C., Subrahmanyam, P., Waldspurger, C. A., Boneh, D., Dwoskin, J., and Ports, D. R. Overshadow: A virtualization-based approach to retrofitting protection in commodity operating systems. In ACM International Confer- ence on Architectural Support for Programming Languages and Operating Systems (ASPLOS) (2008).
+\item Chen, X., Garfinkel, T., Lewis, E. C., Subrahmanyam, P., Waldspurger, C. A., Boneh, D., Dwoskin, J., and Ports, D. R. Overshadow: A virtualization-based approach to retrofitting protection in commodity operating systems. In ACM International Conference on Architectural Support for Programming Languages and Operating Systems (ASPLOS) (2008).
 	% \cite{overshadow}
 \item McCune, J. M., Parno, B. J., Perrig, A., Reiter, M. K., and Isozaki, H. Flicker: An execution infrastructure for tcb minimization. In European Conference on Computer Systems (EuroSys) (2008).
     %\cite{flicker}
@@ -51,23 +51,26 @@
 \end{enumerate}
 
 \section{Program Partitioning} 
-% others: \cite{panoply}
+% could add: \cite{panoply}
+
 \begin{enumerate}[resume]
 \item  Brumley, D., and Song, D. Privtrans: Automatically partitioning programs for privilege separation. In USENIX Security Symposium (2004).
 	% \cite{privtrans}
 \item  Lind, J., Priebe, C., Muthukumaran, D., O’Keeffe, D., Aublin, P.-L., Kelbert, F., Reiher, T., Goltzsche, D., Eyers, D., Kapitza, R., Fetzer, C., and Pietzuch, P. Glamdring: Automatic application partitioning for Intel SGX. In USENIX Annual Technical Conference (2017).
 	% \cite{glamdring}
-\item  Zdancewic, S., Zheng, L., Nystrom, N., and Myers, A. C. Untrusted hosts and confi- dentiality: Secure program partitioning. In ACM Symposium on Operating Systems Principles (SOSP) (2001).
+\item  Zdancewic, S., Zheng, L., Nystrom, N., and Myers, A. C. Untrusted hosts and confidentiality: Secure program partitioning. In ACM Symposium on Operating Systems Principles (SOSP) (2001).
     % \cite{jif}
 \item  Rastogi, A., Hammer, M. A., and Hicks, M. Wysteria: A programming language for generic, mixed-mode multiparty computations. In IEEE Symposium on Security and Privacy (2014).
     %\cite{wysteria}
 \item Ghosn, A., Larus, J. R., and Bugnion, E. Secured routines: Language-based construction of trusted execution environments. In USENIX Annual Technical Conference (2019).
     % \cite{secured-routines}
-\item Bittau, A., Marchenko, P., Handley, M., and Karp, B. Wedge: Splitting applica- tions into reduced-privilege compartments. In Symposium on Networked Systems Design and Implementation (NSDI) (2008).
+\item Bittau, A., Marchenko, P., Handley, M., and Karp, B. Wedge: Splitting applications into reduced-privilege compartments. In Symposium on Networked Systems Design and Implementation (NSDI) (2008).
     % \cite{wedge}
 \end{enumerate}
 
 \section{Information Flow Control and Taint Tracking}
+% could remove: \cite{pin-pldi}, \cite{libdft}, \cite{taint-demand-emulation}
+
 \begin{enumerate}[resume]
 \item Luk, C.-K., Cohn, R., Muth, R., Patil, H., Klauser, A., Lowney, G., Wallace, S., Reddi, V. J., and Hazelwood, K. Pin: Building customized program analysis tools with dynamic instrumentation. In ACM SIGPLAN Conference on Programming Language Design and Implementation (2005).
     %\cite{pin-pldi}
