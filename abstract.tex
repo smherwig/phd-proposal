@@ -33,11 +33,11 @@ In the second part, I discuss my proposed work, an operating system abstraction
 that I call \emph{codomains}. 
 %    
 Codomains maintain the source-level abstraction of a monolithic program, but
-allow applications to, dynamically and at run-time, switch exeuction to
-different domains---hosts and enclaves---via language-neutral mechanisms.
+allow applications to dynamically switch execution to different
+domains---hosts and enclaves---via language-neutral mechanisms.
 %
-Within a domain, the application may pin data as only accessible to the domain
-itself, or to a subset of peer domains.
+Within a domain, the application may pin data to the domain or to a subset of
+peer domains.
 %
 In contrast to my prior work, \emph{codomains} are not strictly dependent on
 secure hardware, but may use such hardware, if available.

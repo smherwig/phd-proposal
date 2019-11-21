@@ -22,23 +22,22 @@ Unfortunately, outsourcing poses a security tradeoff: the third party
 providers that offer or deploy these services potentially gain access to
 sensitive information about the organization and its clients.   
 %
-Moreover, in cases where the organization abandons in-house services in favor
-of a provider's software suite, the organization may no longer have insight
-into what software is even implementing the service.
+%Moreover, in cases where the organization abandons in-house services in favor
+%of a provider's software suite, the organization may no longer have insight
+%into what software is even implementing the service.
 
 
 % TODO: maybe expand this paragraph a bit
 %
 % XXX: the problem is larger than just running trusted software on an untrusted
 % host.
+
 Running trusted applications with strong security and privacy guarantees on
-untrusted third parties, and its dual, safely running untrusted applications
-within a trusted environment, is a large and active area of research; it spans
-uses of trusted hardware and functional encryption that seek to continue
-hosting applications completely on third parties, to (re-)designing
-applications and protocols so as to delegate trust, preserve privacy, or
-otherwise partition the application's execution across trust boundaries and 
-application integrity.
+untrusted third parties is a large and active area of research; it spans uses
+of trusted hardware and functional encryption that seek to continue hosting
+applications completely on third parties, to (re-)designing applications and
+protocols so as to delegate trust, preserve privacy, or otherwise partition the
+application's execution across trust boundaries and application integrity.
 %
 Unfortunately, this prior work either requires modifications to the
 application, or has severe limits on the types of unmodified applications
@@ -49,7 +48,7 @@ supported.
 My thesis is:
 \begin{displayquote}
     It is possible to run legacy application binaries with confidentiality and
-    integrity guarantees that reflect the potentially multi-lateral trust model
+    integrity guarantees that reflect the potentially multi-party trust model
     in which the application is deployed.
 \end{displayquote}
 % Running unmodified, legacy binaries that have monolithic trust assumptions in
@@ -61,8 +60,8 @@ My thesis is:
 % provider does not deviate from the service's expected behavior.
 
 
-The term \emph{multi-lateral trust model} means that the trust model may
-encompass the concerns of multiple parties.
+%The term \emph{multi-lateral trust model} means that the trust model may
+%encompass the concerns of multiple parties.
 %
 The constraint of running unmodified, legacy services implies that the
 enforcement of security, privacy, and correctness guarantees is the
@@ -74,8 +73,8 @@ varying trustworthiness, so as to reflect the security goals.
 %
 My approach is to modify the application's execution environment so that
 parties can specify as policy their desired confidentiality and integrity
-guarantees with respect to the application, and have the execution environment
-apply and enforce the policy on behalf of the application.
+guarantees with respect to the application, with the execution environment
+appling and enforcing the policy.
 
 
 Several factors strongly influence the design of such an execution environment:
@@ -92,27 +91,26 @@ multi-process, shared resource, applications.
 My extensions result in a distributed system reminiscent of a microkernel,
 where each kernel service (for instance, a filesystem or shared memory)
 runs in a separate enclave and mediates that service’s shared resources
-among the application’s enclaved processes.
+among the application's enclaved processes.
 %
 With conclaves, the trust policy is code-centric, as the parties specify which
 processes comprise the system, as well as which processes may interact with one
 another.
 
 
-My proposed work, \textbf{Gemini}, treats trusted hardware availability and
-application trustworthiness as policy concerns.
+My proposed work, \textbf{codomains}, treats trusted hardware availability as a
+policy concern.
 %
-Gemini is an execution environment that offers two complementary abstractions:
-(1) \emph{distributed containers}, where organizations may pin sensitive data to
-domains (such as a host) that they trust; a thread's execution migrates to the
-trusted domain when computing with the sensitive data or any sensitive data
-derived from it, and (2) \emph{policy monitors}---modules that an organization
-may install in a trusted environment that enforce expected behavior of an
-untrusted application.
+Codomains maintain the source-level abstraction of a monolithic program, but
+allow applications to dynamically switch execution to different domains—hosts
+and enclaves—via language-neutral mechanisms.
 %
-A key feature of policy monitors is that the policies express a specification
-for program correctness based on tracking information flows, which
-the monitor enforces at run-time.
+Within a domain, the application may pin data to the domain or to a subset of
+peer domain.
+%
+
+
+
 %
 With Gemini, the trust policy is data-centric, as parties specify which data
 must be isolated from other parties and how data may flow throughout the
@@ -129,14 +127,12 @@ in TEEs.
 I also describe techniques for data isolation and integrity that pre-date, or
 are otherwise orthogonal to, TEEs.
 %
-In \S\ref{sec:conclaves-summary}, I summarize my preliminary work,
-conclaves, and in \S\ref{sec:gemini-design} describe my proposed design for
-Gemini.
+In \S\ref{sec:conclaves-summary}, I summarize my preliminary work.
 %
-I describe a set of evaluations for Gemini in \S\ref{sec:gemini-eval}.
+In \S\ref{sec:codomains-intro} I introduce the concept of codomains, as well as
+a related concept of the coprocess, and in \S\ref{sec:codomains-design} sketch
+their design.
 %
-In \S\ref{sec:mixing}, I consider reasons and methods for mixing these two
-systems, and in \S\ref{sec:para} envision how developers would change
-applications if they knew that the application would run under such a system.
+I describe a set of evaluations for codomains in \S\ref{sec:codomains-eval}.
 %
 I conclude in \S\ref{sec:conclusion}.
