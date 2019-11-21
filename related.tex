@@ -17,9 +17,7 @@ within it as well.
 %
 A wide range of TEEs are available today, with varying functionalities.
 %
-We focus on Intel's Software Guard Extensions (SGX) environment, and AMD's
-Secure Encrypted Virtualization, the two TEE implementations for the x86\_64
-architecture.
+We focus on Intel's Software Guard Extensions (SGX)\@.
 
 
 \parhead{Intel SGX Overview}
@@ -58,32 +56,32 @@ must be proxied through the untrusted OS.
 
 \parhead{AMD-SEV Overview}
 %
-Whereas Intel SGX guards fine-grained units of execution, AMD's Secure
-Encryped Virtualization (SEV) is roughly the equivalent of an enclaved
-virtual machine.
+%Whereas Intel SGX guards fine-grained units of execution, AMD's Secure
+%Encryped Virtualization (SEV) is roughly the equivalent of an enclaved
+%virtual machine.
+%%
+%SEV is based upon AMD Memory Encryption Technology, which introduces an
+%AES-128 encryption engine inside the System on Chip (SoC) that transparently
+%encrypts and decrypts the data when it leaves or enters the SoC, respectively.
+%%
+%Encryption key management, such as generating, storing, and delivering the
+%keys, are carried out by the AMD secure processor and the encryption keys are kept
+%hidden from untrusted parts of the platform.
+%%
+%The secure processor provides a set of APIs for provisioning and managing the
+%platform in the cloud.
 %
-SEV is based upon AMD Memory Encryption Technology, which introduces an
-AES-128 encryption engine inside the System on Chip (SoC) that transparently
-encrypts and decrypts the data when it leaves or enters the SoC, respectively.
 %
-Encryption key management, such as generating, storing, and delivering the
-keys, are carried out by the AMD secure processor and the encryption keys are kept
-hidden from untrusted parts of the platform.
-%
-The secure processor provides a set of APIs for provisioning and managing the
-platform in the cloud.
-
-
-SEV allows individual VMs to encrypt their memroy pages using their own secure
-keys; the VM's memory space is thus protected from from the hypervisor and
-co-resident VMs.
-%
-When code and data arrive into the SoC, SEV tags all of the code and data
-associated with the guest VM in the cache and limits access only to the tag's
-owner VM.
-%
-The guest OS is able to specify which memory pages are encrypted through new
-page table attributes.
+%SEV allows individual VMs to encrypt their memroy pages using their own secure
+%keys; the VM's memory space is thus protected from from the hypervisor and
+%co-resident VMs.
+%%
+%When code and data arrive into the SoC, SEV tags all of the code and data
+%associated with the guest VM in the cache and limits access only to the tag's
+%owner VM.
+%%
+%The guest OS is able to specify which memory pages are encrypted through new
+%page table attributes.
 
 
 \parhead{Attacks}
