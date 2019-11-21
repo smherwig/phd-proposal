@@ -108,13 +108,12 @@ and enclaves—via language-neutral mechanisms.
 Within a domain, the application may pin data to the domain or to a subset of
 peer domain.
 %
-
-
-
+Although codomains present an explicit API for specifying domain switches and
+data pinning, the design allows a monitor to implicitly call such functions.
 %
-With Gemini, the trust policy is data-centric, as parties specify which data
-must be isolated from other parties and how data may flow throughout the
-system.
+In its extreme, this allows the trust policy to be data-centric, with parties
+specifing which data must be isolated from other parties and how data may flow
+throughout the system.
 
 
 This proposal is organized as follows: in \S\ref{sec:background}, I describe
