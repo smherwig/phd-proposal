@@ -505,3 +505,37 @@ secure channels with one another.
 
 
 \subsection{Evaluation}
+
+Figure~\ref{fig:macrobench-single-tenant-lat-throughput} shows
+request latency and throughput results for the four configurations.
+%
+Due to the RSA private key operation in the TLS handshake, Linux becomes
+CPU-bound at four workers (our test machine has four physical cores) and
+saturates the Ethernet link for tests with a 100~KiB payload and more than one
+NGINX worker.
+%
+Linux-keyless shows that the concurrency of the keyserver levels
+off with two workers, and thus that the two NGINX worker configuration of
+Linux-keyless is an upper-bound on the performance we can hope to achieve
+with the other conclave configurations.
+%
+%In addition, whereas Graphene-crypt shows increased performance as the number
+%of workers increases, Graphene-vericrypt tops off at two workers, before
+%showing worse performance with more NGINX workers.
+%
+To compete with a one worker Linux configuration, Linux-keyless needs two
+workers, and Graphene-crypt needs four; Linux with two or more workers beats
+all conclave configurations.
+
+
+\begin{figure}[t]
+	\centering
+    \includegraphics[width=0.5\textwidth]{figs/macrobench-single-tenant-lat-throughput}
+	%
+	\caption{Throughput and latency for single tenant configurations.
+    The legend indicates the number of NGINX worker processes.
+    We include the standard deviation of the latencies as error bars.}
+	%
+	\vspace*{-4pt}
+    \label{fig:macrobench-single-tenant-lat-throughput}
+\end{figure}
