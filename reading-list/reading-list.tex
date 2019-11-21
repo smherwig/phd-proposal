@@ -1,0 +1,84 @@
+\section{Classic}
+% classic systems, operating systems, and security papers
+% TODO: perhaps a classic DSM paper
+
+\begin{enumerate}
+\item  Saltzer, J., Reed, D., and Clark, D. End-to-end arguments in system design. ACM Transactions on Computer Systems 2, 4 (Nov. 1984).
+    % \cite{e2e-argument}
+\item Liedtke, J. On micro-kernel construction. In ACM Symposium on Operating Systems Princi- ples (SOSP) (1995).
+    % \cite{micro-kernel-construction}
+\item  Pike, R., Presotto, D., Dorward, S., Flandrena, B., Thompson, K., Trickey, H., and Winterbottom, P. Plan 9 from Bell Labs, 1995.
+    % \cite{plan9}
+\item Douglis, F., and Ousterhout, J. Transparent process migration: Design
+    alternatives and the sprite implementation. Software—Practice \& Experience 21, 8 (1991), 757–785.
+    % \cite{transparent-process-migration}
+\item  Lampson, B. W. Hints for computer system design. In ACM Symposium on Operating Systems Principles (SOSP) (1983).
+    % \cite{hints-for-computer-system-design}
+\item Engler, D. R., Kaashoek, M. F., and O’Toole, Jr., J. Exokernel: An operating system architecture for application-level resource management. In ACM Symposium on Operating Systems Principles (SOSP) (1995).
+    % \cite{exokernel}
+\item  Bershad, B. N., Anderson, T. E., Lazowska, E. D., and Levy, H. M. Lightweight remote procedure call. In ACM Symposium on Operating Systems Principles (SOSP).
+	% \cite{lightweight-rpc}
+\item  Barham, P., Dragovic, B., Fraser, K., Hand, S., Harris, T., Ho, A., Neugebauer, R., Pratt, I., and Warfield, A. Xen and the art of virtualization. ACM SIGOPS Operating Systems Review 37, 5 (2003), 164–177.
+	%\cite{barham2003xen}
+\item Thompson, K. Reflections on trusting trust. Communications of the ACM 27, 8 (1984), 761–763.
+    % \cite{reflections-on-trusting-trust}
+\item Chandy, K. M., and Lamport, L. Distributed snapshots: Determining global states of distributed systems. ACM Transactions on Computer Systems 3, 1 (1985), 63–75.
+    % \cite{distributed-snapshots}
+\end{enumerate}
+
+
+\section{Secure/Isolated Execution}
+% others: \cite{scone}
+
+\begin{enumerate}[resume]
+%\setcounter{enumi}{1}
+\item Costan, V., and Devadas, S. Intel SGX Explained. Tech. Rep. 2016/086, Cryptology ePrint Archive, 2016.
+    % \cite{intel-sgx-explained}
+\item  Tsai, C.-C., Porter, D. E., and Vij, M. Graphene-SGX: A practical library OS for unmodified applications on SGX. In USENIX Annual Technical Conference (2017).
+	%\cite{graphene}
+\item Van Bulck, J., Minkin, M., Weisse, O., Genkin, D., Kasikci, B., Piessens, F., Silberstein, M., Wenisch, T. F., Yarom, Y., and Strackx, R. Foreshadow: Extracting the keys to the Intel SGX kingdom with transient out-of-order execution. In 27th USENIX Security Symposium (USENIX Security 18) (2018), pp. 991–1008.
+	%\cite{foreshadow}
+\item Hunt, T., Zhu, Z., Xu, Y., Peter, S., and Witchel, E. Ryoan: A distributed sandbox for untrusted computation on secret data. In Proceedings of the 12th USENIX Conference on Operating Systems Design and Implementation (2016), Symposium on Operating Systems Design and Implementation (OSDI).
+    %\cite{ryoan}
+\item Chen, X., Garfinkel, T., Lewis, E. C., Subrahmanyam, P., Waldspurger, C. A., Boneh, D., Dwoskin, J., and Ports, D. R. Overshadow: A virtualization-based approach to retrofitting protection in commodity operating systems. In ACM International Confer- ence on Architectural Support for Programming Languages and Operating Systems (ASPLOS) (2008).
+	% \cite{overshadow}
+\item McCune, J. M., Parno, B. J., Perrig, A., Reiter, M. K., and Isozaki, H. Flicker: An execution infrastructure for tcb minimization. In European Conference on Computer Systems (EuroSys) (2008).
+    %\cite{flicker}
+\item  Chen, Y., Reymondjohnson, S., Sun, Z., and Lu, L. Shreds: Fine-grained execution units with private memory. In IEEE Symposium on Security and Privacy (2016).
+	% \cite{shreds}
+\item  Litton, J., Vahldiek-Oberwagner, A., Elnikety, E., Garg, D., Bhattacharjee, B., and Druschel, P. Light-weight contexts: An os abstraction for safety and performance. In Symposium on Operating Systems Design and Implementation (OSDI) (2016).
+    % \cite{lwcs}
+\end{enumerate}
+
+\section{Program Partitioning} 
+% others: \cite{panoply}
+\begin{enumerate}[resume]
+\item  Brumley, D., and Song, D. Privtrans: Automatically partitioning programs for privilege separation. In USENIX Security Symposium (2004).
+	% \cite{privtrans}
+\item  Lind, J., Priebe, C., Muthukumaran, D., O’Keeffe, D., Aublin, P.-L., Kelbert, F., Reiher, T., Goltzsche, D., Eyers, D., Kapitza, R., Fetzer, C., and Pietzuch, P. Glamdring: Automatic application partitioning for Intel SGX. In USENIX Annual Technical Conference (2017).
+	% \cite{glamdring}
+\item  Zdancewic, S., Zheng, L., Nystrom, N., and Myers, A. C. Untrusted hosts and confi- dentiality: Secure program partitioning. In ACM Symposium on Operating Systems Principles (SOSP) (2001).
+    % \cite{jif}
+\item  Rastogi, A., Hammer, M. A., and Hicks, M. Wysteria: A programming language for generic, mixed-mode multiparty computations. In IEEE Symposium on Security and Privacy (2014).
+    %\cite{wysteria}
+\item Ghosn, A., Larus, J. R., and Bugnion, E. Secured routines: Language-based construction of trusted execution environments. In USENIX Annual Technical Conference (2019).
+    % \cite{secured-routines}
+\item Bittau, A., Marchenko, P., Handley, M., and Karp, B. Wedge: Splitting applica- tions into reduced-privilege compartments. In Symposium on Networked Systems Design and Implementation (NSDI) (2008).
+    % \cite{wedge}
+\end{enumerate}
+
+\section{Information Flow Control and Taint Tracking}
+\begin{enumerate}[resume]
+\item Luk, C.-K., Cohn, R., Muth, R., Patil, H., Klauser, A., Lowney, G., Wallace, S., Reddi, V. J., and Hazelwood, K. Pin: Building customized program analysis tools with dynamic instrumentation. In ACM SIGPLAN Conference on Programming Language Design and Implementation (2005).
+    %\cite{pin-pldi}
+\item  Newsome, J., and Song, D. Dynamic taint analysis for automatic detection, analysis, and signature generation of exploits on commodity software. In Network and Distributed System Security Symposium (NDSS) (2005).
+	%\cite{taint-tracking}
+\item Kemerlis, V. P., Portokalidis, G., Jee, K., and Keromytis, A. D. libdft: Practical dynamic data flow tracking for commodity systems. In ACM International Conference on Virtual Execution Environments (VEE) (2012).
+	%\cite{libdft}
+\item Ho, A., Fetterman, M., Clark, C., Warfield, A., and Hand, S. Practical taint-based protection using demand emulation. In European Conference on Computer Systems (EuroSys) (2006).
+    % \cite {taint-demand-emulation}
+\item Krohn, M., Yip, A., Brodsky, M., Cliffer, N., Kaashoek, M. F., Kohler, E., and Morris, R. Information flow control for standard OS abstractions. In ACM Symposium on Operating Systems Principles (SOSP) (2007).
+    % \cite{flume}
+\item Enck, W., Gilbert, P., Chun, B.-G., Cox, L. P., Jung, J., McDaniel, P., and Sheth, A. N. Taintdroid: An information-flow tracking system for realtime privacy monitoring on smartphones. In Symposium on Operating Systems Design and Implementation (OSDI) (2010).
+    % \cite{taintdroid}
+\end{enumerate}
