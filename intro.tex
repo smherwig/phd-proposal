@@ -1,88 +1,77 @@
 \section{Introduction}
 \label{sec:intro}
 
-Software is often written assuming monolithic trust assumptions, whereby
-the user tacitly trusts both the software and the environment in which it runs.
+%% big picture
+Applications often assumes that a single party controls the application, its
+data, and its execution environment.
 %
-This assumption is valid when the user, say an organization, develops the
-software, owns the infrastructure, and administers all parts of the resultant
-system.
+This assumption is valid when a party develops the software, owns the data, 
+and administers the deployment infrastructure.
 %
-However, the assumption no longer holds for service models that involve
-distrustful parties.
-%
-A prime example is an organization that outsources its services to untrusted
-third parties, such as content delivery networks and mail providers.
-%
-Outsourcing is an attractive way for an organization to reduce costs,
-increase availabilty, or gain additional protections inherent to these hosting
-environments.
-%
-Unfortunately, outsourcing poses a security tradeoff: the third party
-providers that offer or deploy these services potentially gain access to
-sensitive information about the organization and its clients.   
-%
-%Moreover, in cases where the organization abandons in-house services in favor
-%of a provider's software suite, the organization may no longer have insight
-%into what software is even implementing the service.
+However, when these applications must use a heterogeneous dataset,
+such as data form multiple parties, or run under a different deployment, such
+as on a third-party's cloud, the application's original assumption of a
+monolithic trust setting is no longer valid.
 
 
-% TODO: maybe expand this paragraph a bit
+%% statement of problem (why big picture murky)
+Unfortunately, the operational status quo is either to ignore the issue, or
+restrict the scope of such applications.  
 %
-% XXX: the problem is larger than just running trusted software on an untrusted
-% host.
-
-Running trusted applications with strong security and privacy guarantees on
-untrusted third parties is a large and active area of research; it spans uses
-of trusted hardware and functional encryption that seek to continue hosting
-applications completely on third parties, to (re-)designing applications and
-protocols so as to delegate trust, preserve privacy, or otherwise partition the
-application's execution across trust boundaries and application integrity.
+For instance organizations outsource their applications to the cloud for
+cost-savings or deployment flexibility, even though this decision exposes to
+the cloud operators private data about the organization and its patrons.
 %
-Unfortunately, this prior work either requires modifications to the
-application, or has severe limits on the types of unmodified applications
-supported.
+Considerable data is confined to so-called data-islands.
 
 
-% this is too specific
-My thesis is:
+
+%% challenges in solving it    (why does it remain murky)
+Academia and industry have devoted considerable attention to the underlying
+problems of secure remote computation and secure multi-party computation.
+%
+A major difficulty is that conventional operating systems and
+programming languages offer limited support for developing and running software
+that has an execution model based on heterogeneous trust.
+%
+Thus, much of the systems-oriented research in this area explores languages,
+tools, and system designs for addressing and expressing this execution model.
+
+
+%%  your insight
+My insight is to apply ideas from alternative operating system
+architectures that emphasize a distributed and application-specific execution
+environment.
+%
+Whereas these architectures are motivated by stability, performance, or
+maximizing use of idle resources, my focus instead is on using them as a means
+for constructing and enforcing isolation boundaries that reflect the principals
+and trust assumptions of the application.
+%
+Since the execution enviornment is transparent to the application, 
+it may be modified, partitioned, or distributed across domains of varying
+trustworthiness, so as to reflect multi-party security goals.
+%
+Transparency with respect to the application lends this approach to the
+important and practical property of enabling \emph{post-hoc} refinements to an
+application's security and privacy guarantees, without changing the
+application's source code.
+%%  your thesis
+To that end, my thesis is:
 \begin{displayquote}
-    It is possible to run legacy application binaries with confidentiality and
+    It is possible to run legacy application binaries with confidentiality and 
     integrity guarantees that reflect the potentially multi-party trust model
     in which the application is deployed.
 \end{displayquote}
-% Running unmodified, legacy binaries that have monolithic trust assumptions in
-% environments where such assumptions do not hold.  
-
-% For instance, an organization to outsource their unmodified, legacy, services
-% to an untrusted hosting provider, who may in fact provide the service itself,
-% without leaking private data to the provider and with guarantees that the
-% provider does not deviate from the service's expected behavior.
 
 
-%The term \emph{multi-lateral trust model} means that the trust model may
-%encompass the concerns of multiple parties.
+%% contributions you make
+%Several factors strongly influence the design of such an execution environment:
+%the presence of trusted hardware, the trust each party has in the application,
+%and the mechanisms for defining and enforcing trust boundaries.
 %
-The constraint of running unmodified, legacy services implies that the
-enforcement of security, privacy, and correctness guarantees is the
-responsibilty of the service's run-time execution environment. 
-%
-Since the execution environment is transparent to the application, the insight
-is that it may be modified, partitioned, and distributed across domains of
-varying trustworthiness, so as to reflect the security goals.
-%
-My approach is to modify the application's execution environment so that
-parties can specify as policy their desired confidentiality and integrity
-guarantees with respect to the application, with the execution environment
-applying and enforcing the policy.
-
-
-Several factors strongly influence the design of such an execution environment:
-the presence of trusted hardware, the trust each party has in the application,
-and the mechanisms for defining and enforcing trust boundaries.
-%
-In my preliminary work, \textbf{conclaves}, I assume the presence of Intel SGX hardware
-enclaves and that the organization trusts the service.
+In my preliminary work, \textbf{conclaves}, I assume the availability of Intel
+SGX secure hardware enclaves.
 %
 Conclaves extends prior work on SGX-based library operating systems (libOS) by
 extending a libOS to support a broader set of legacy services: namely,
@@ -106,16 +95,18 @@ allow applications to dynamically switch execution to different domains---hosts
 and enclaves---via language-neutral mechanisms.
 %
 Within a domain, the application may pin data to the domain or to a subset of
-peer domain.
+peer domains.
 %
-Although codomains present an explicit API for specifying domain switches and
-data pinning, the design allows a monitor to implicitly call such functions.
+Although codomains present an explicit API for domain switches and data
+pinning, the design allows a monitor to implicitly and transparently call such
+functions on the application's behalf.
 %
-In its extreme, this allows the trust policy to be data-centric, with parties
+In its extreme, codomains allows the trust policy to be data-centric, with parties
 specifing which data must be isolated from other parties and how data may flow
 throughout the system.
 
 
+%% description of the rest of paper, at a high-level
 This proposal is organized as follows: in \S\ref{sec:background}, I describe
 the problem setup, the threat model, and the system goals.
 %
@@ -135,3 +126,5 @@ their design.
 I describe a set of evaluations for codomains in \S\ref{sec:codomains-eval}.
 %
 I conclude in \S\ref{sec:conclusion}.
+
+

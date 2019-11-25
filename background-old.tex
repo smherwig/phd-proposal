@@ -1,0 +1,303 @@
+\section{Background}
+\label{sec:background}
+
+In this section, I clarify the problem with specific examples, and specifically
+focus on the everday case of outsourcing.
+%
+%
+In this setting there are two principals: the \emph{organization} and the
+\emph{cloud service provider}.
+%
+I describe the security and privacy implications of naively outsourcing, as
+well as several trust models that apply to this setting, 
+%
+I then enumerate a list of goals for a system designed to handled these
+implications.
+
+
+\subsection{Problem}
+
+There are two broad approaches of outsourcing.
+%
+The first, \emph{cloud hosting}, is an organization migrating its in-house
+services to a third-party deployment; the second is an organization  migrating
+from in-house services to those offered by third party \emph{cloud services}.
+%
+Hybrid approaches exist, such as where a cloud service provider must
+communicate with the organization's in-house, backend services.
+%
+Common outsourcing examples are an organization moving its HTTPS, DNS, or
+email servers into the cloud, or contracting some other party to run its own
+implementations of these services on the organization's behalf.
+%
+Nowadays, all of these core application-level protocols use public key
+cryptography to ensure the integrity, authenticity, and/or confidentiality of
+the application's content.
+
+
+As a concrete example, consider an organization that outsources its web hosting
+to a a content delivery network (CDN)\@.
+%
+A CDN is a massive, global network of \emph{edge servers}, where each edge
+server acts as a reverse proxy for the organization: to
+handle client requests, edge servers retrieve content from the organization's
+\emph{origin servers}, and cache it so they can deliver it locally.
+%
+CDNs derive much of their utility from the fact that they have servers close to
+most clients, thereby providing low-latency responses.
+%
+Several techniques exist for routing clients to the closest edge server, but
+DNS is common, and so the CDN may also handle the organization's DNS server.
+%
+CDNs also provide added security benefits, such as absorbing DDoS
+traffic, and filtering targeted malicious trafic, such as SQL injection and
+cross-site scripting attacks~\cite{securing-cdns}.
+%
+Virtually all of the most popular websites (and a very long tail of unpopular
+websites) use one or more CDNs to help reliably host their content.
+
+
+With these use-cases in mind, let's enumerate the security and privacy
+implications of outsourcing such service such services.
+
+
+% XXX: try to keep each implication to one meaty paragraph.
+\parhead{Impersonation}
+% byzantine
+%
+In order for the provider to fulfill the service, the provider must
+have access to the application's private keys.
+%
+Indeed, as the web moves towards HTTPS-everywhere~\cite{felt-2017-https},
+organizations increasingly rely on CDN providers to store their HTTPS
+certificate and the corresponding secret keys~\cite{key-sharing,
+when-https-meets-cdn}, so that they can accept TLS connections while
+maintaining low latency to clients.
+%
+Even with an application like DNS, where an organization would traditionally sign
+its DNS records offline, the organization may choose to outsource the keys
+and management to the provider.
+%
+% TODO: cite cloudflare blog
+With the organization's private DNS keys online, the provider can offer
+additional services, such as greater flexibility to return geographically-based
+responses, as well as zone enumeration defenses.
+%
+This has significant implications on the trust model of each PKI and the web
+writ large: today's providers can arbitrarily impersonate any of their customer
+organizations.
+
+
+\parhead{Breach of Confidentiality}
+% Honest but curious
+%
+With the provider acting as a man-in-the-middle between the
+organization and its clients, the provider is privy to the client's private
+data, such as passwords, cookies, and personal content, as well as metadata 
+for client profiling.
+%
+The provider might further subcontract aspects of the deployment (as with an
+email provider using another provider for virus and spam scanning), with
+the client and organization unaware of the extent of their data exposure.
+
+
+\parhead{Correctness}
+% concern 4: correctess: e.g., DNSSEC providers not actually providing DNSSEC.
+% Negligent (also, a supertet of the byzantine and honest but curious)
+%
+By outsourcing a service, the organization no longer has guarantees that the
+provider adheres to the expected service.
+%
+For instance, one DNS study~\cite{chung-2017-dnssec} discovered that 31\% of
+domains that claim to support DNSSEC fail to publish all relevant records
+required for a client resolver to validate the response, while
+a study~\cite{open-http-proxies} of open HTTP proxies found that 5\% perform
+unwanted or malicious content modification.
+
+
+% TODO: call this something else
+\parhead{Latent Trust Assumptions}
+%
+Assume a hybrid deployment where the organization has migrated its front-end
+business applications to a cloud service provider, but that the application's
+database remains within the organization’s network. 
+%
+Before migrating to the cloud, the database could trust that any connections to
+it were from benign, internal tools; in the new deployment setting, the
+organization must guard against potentially malicious or devious queries from
+the cloud front-end.
+
+
+\parhead{Legal and Regulatory Restrictions}
+% concern 5: legal, policy compliance, ...restrictions
+% talk about akamai not hosting content on thrid parties.
+% talk about HIPPA (as with emails)
+%
+By outsourcing a service, the organization may be non-compliant with
+industry regulations.
+%
+For instance, a hospital may be unable to run its electronic medical records
+system in the cloud due to concerns  of HIPPA compliance.
+%
+In other words, even if the organization itself accepts the security and
+privacy implications of outsourcing their services, legal matters may restrict
+the degree to which the organization can leverage such deployments.
+
+
+\subsection{Trust Model}
+
+\begin{table}[t]
+%\resizebox{.5\textwidth}{!}{
+\small
+\centering
+\rowcolors{2}{gray!15}{white}
+    \begin{tabular}{@{}lcccl@{}}
+        & \textbf{Enclave}& \textbf{Provider} & \textbf{Software} & \textbf{Deployment} \\
+        \hline
+        1 & \cmark          &                   & \cmark          & Conclaves   \\
+        2 &                 &                   & \cmark          & Gemini      \\
+        3 & \cmark          &                   &                 & out of luck \\ % sandbox in enclave
+        4 &                 &                   &                 & out of luck \\ % sandbox in partition
+\end{tabular}
+%}
+\caption{The deployment strategy, depending on whether the provider offers
+    trusted enclaves, whether the organization trusts the service provider, and
+    whether the organization trusts the provider's application software.
+    }
+\label{tab:trust-models}
+\end{table}
+
+We describe an idealized trust model from the perspective of an
+organization that uses a cloud service provider that requires the organization's
+sensitive data.
+%
+For simplicity, we assume that the provider and the cloud machine owner are the
+same party, and that the provider administers all software on the machine,
+including any system software, such as the operating system, as well as the
+application.
+%
+An untrusted provider may deviate arbitrarily from the stated service, but
+remains subject to standard cryptographic assumptions.
+%
+Likewise, untrusted software may deviate abitrarily from its stated purpose
+and, in particular, may actively try to leak sensitive data.
+%
+We assume, however, that the software is bug-free, and thus the model omits
+external actors, such as a remote attacker.
+%
+The application may be composed entirely of open-source components, private
+components that are proprietary to the provider, or some combination thereof.
+%
+If trusted boot is available  (either via a TPM, or in the form of secure
+enclave launch), we assume that the organization and provider can agree to run
+a specific build of system software, and that such software is trusted and
+bug-free.
+
+
+Table~\ref{tab:trust-models}, shows the different possible trust models based
+on whether the provider offers hardware enclaves, whether the organization
+trusts the provider, and whether the organization trusts the provider's
+software.
+%
+We omit the uninteresting cases with a trusted provider, with the assumption
+that the organization transitively trusts applications that the provider
+offers.
+
+
+In model 1, the organization trusts the software, but does not trust the
+provider to run it faithfully, and thus uses one of various
+approaches~\cite{talos,haven,scone,graphene} to
+run an unmodified legacy application in an enclave.
+%
+This is the trust model for my prior work, conclaves, described in
+\S\ref{sec:conclaves-summary}.
+%
+In contrast, in model 2, an enclave is not available (or assumed vulnerable to
+to side-channnel attacks).
+%
+This is the starting use-case for Gemini, described in \S\ref{sec:gemini-design}.
+%
+In models 3 and 4, where neither the provider nor the software is trusted, no
+general purpose solution exists for an organization to securely use an
+commodity applicatins.
+
+
+%For instance, the application may be composed of several components, some of
+%which are trusted, and some are not; we assume that the organization
+%trusts the components that interact with the senstive data.
+
+In practice, the model's binary characterization of ``trusted" is too coarse,
+the definition of untrusted as ``arbitrarily malicious" too strong,
+and the assumptions of bug-free code and attacker-free environments too
+naive.
+%
+For instance, it may be the case that most of the application is untrusted, but
+the organization trusts a small portion of the application, such as its
+cryptographic library.
+%
+This scenario is between models 2 and models 3 and 4, as the organization can
+identify a small trusted computing base within the application.
+%
+Moreover, in the presence of attackers, an organization may simply
+want strong, physical, isolation of its sensitive data from a remote attacker.
+%
+In other words, trust is a spectrum; the model highlights the endpoints of the
+spectrums; my systems (conclaves and Gemini) target a specific endpoint, but,
+to varying degress, allow for the relaxation of assumptions.
+
+
+
+\subsection{Goals}
+
+Our high-level goal is to allow the user to specify a trust policy to the
+runtime execution environment; the runtime transparently implements the
+policy on behalf of the applications.
+%
+I break down the policies into two categories:
+
+\begin{widelist}
+\item \textbf{Confidentiality policies:} Specifications of isolation boundaries for
+    sensitive resources; the runtime constructs and enforces the boundaries.
+
+\item \textbf{Integrity policies:} Specifications for data integrity; the runtime
+    provides mechanisms for measuring integrity and detects breaches of
+    integrity.
+\end{widelist}
+
+
+\parhead{Constraints} 
+%
+The runtime must not require applications to be rewritten or recompiled.
+%
+This constraint eases system adoption, but also underscores my
+thesis that policies are deployment-specific, may be unknown during the
+application's development, and must handle ``black box" applications, where the
+source code is unavailable.
+%
+A secondary constraint is that policy specification  must be simple; I want to avoid
+degenerate solutions where the specification of the policy is more
+onerous than simply rewriting the application.
+
+
+\parhead{Practical Considerations}
+%
+Particularly with respect to outsourcing, the policies
+and runtime should handle applications that multiplex services across organizations,
+with strong isolation between the organizations.
+%
+The runtime should also avoid degenerate solutions
+that transfer undue hosting responsbilities back to the organization, thereby
+defeating the intent of outsourcing.
+
+
+Intuitively, the system will have worse performance than its vanilla
+counterpart.
+%
+Nevertheless, the system should allow introspection into performance
+bottlenecks as a means of investigating possible optimizations.
+
+
+\parhead{Non-Goals}
+%
+I am  not concerned with providing obliviousness to access patterns,
+which may be a side-channel vector.

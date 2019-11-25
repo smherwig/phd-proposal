@@ -1,50 +1,65 @@
 \section{Codomains Evaluation}
 \label{sec:codomains-eval}
 
-\subsection{Correctness}
+
+\subsection{Macro-benchmarks}
+
+\parhead{Webserver}
 %
-I need to ensure that a process running on Gemini shows the correct behavior
-(program correctness), the isolation of pinned data (security correctness), and
-the accuracy of the firewall rules (again, security correctness).
+We evalute the request throughput and latency of a webserver, such as NGINX,
+running in a standard Linux environment, and compare against a configuration of
+the webserver running with codomains, where a separate domain isolates each
+website's private TLS key.
 %
-Pragmatically, this amounts to writing unit tests.
+We also compare the codomain version of the webserver to 
+static partitioning schemes~\cite{eleos,glamdring,privtrans} that achieve
+the same isolation.
 %
-Additionally, it may involve showing generality by, for instance, instrumenting
-more than just OpenSSL (the macro-benchmarks can also help to show generality
-at the application-level).
+When comparing to static partitioning schemes, we are interested not only in the
+performance differences, but also how the the boundaries determined by each
+scheme differ.
 %
-For demonstrating data isolation, you might have an external program that just
-dumps and scans a process's memory for a given byte string.
+The benchmark affords multiple variants, such as investigating how codomains
+scale with multiple tenants (multiple websites multiplexed by the same
+webserver), how the system performs when the webserver itself contains
+private data that must be cloaked from tenants, how well different server
+models (such as multi-process vs. multi-threaded) interact with codomains, and
+how host-codomains compare to enclave-codomains.
 
 
-% TODO: try to think of a few correctness conditions, and what the unit test
-% would look like for each one.  You might also consider tests for different
-% application models, such as a single-threaded vs multi-threaded, vs
-% multi-process application.
+\parhead{Federated Data Analysis}
 
 
-\parhead{Fault-injection tests}
+\parhead{Federated Learning}
+
+
+\subsection{Micro-benchmarks}
+
+With the micro-benchmarks, we are interested in isolating the cost of each
+facet of codomains---thread migration, taint tracking, the DSM protocol.
 %
-TODO: purposefully try to send packets that do not pass the tag-aware packet
-filters and verify that the filters prevent the transmission.
+For such purposes, we envision developing a small set of multi-party programs
+drawn from the literature, such as:
 
-
-\subsection{Performance}
-
-\subsubsection{Micro-benchmarks}
-
-\parhead{What is the overhead of migration?}
-% The idea is:
-%   - understand the mechanics of migration and "profile" each of its steps.
-%       - this might point out certain optimizations
-%   - compare to alterntavies
-%       - to understand tradeoffs/overheads compared to alternatives
+\begin{widelist}
+\item \textbf{Timestamp signing server:} Returns a signature over the current
+time to each client; we assume the server's key must be isolated from the
+server's host.
 %
-Suppose a thread migrates to a target machine that has pinned a private key in
-order to compute a signature with that key.
+\item \textbf{Richest protocol:} Computes the richest principal.
 %
-At the network level, how would a packet capture of the migration compare to
-that of an alternative RPC-based implementation, such as keyless SSL\@?
+\item \textbf{GPS protocol:} For each participating principal,
+computes the peer that is nearest to their location; each principal learns
+their nearest neighbor without learning anyone's exact location.
+%
+\item \textbf{Auction protocol:} Computes the high bidder among a set of
+participating principals, as well as the second-highest bid, which is revealed
+to everyone; only the auction holder learns the winning bidder.
+\end{widelist}
+
+In the case of the timestamp signing server, we are interested in how a packet
+capture of the migration compares to that of an alternative RPC-based
+implementation, such as keyless SSL\@?
 %
 In particular, how much traffic and how many round-trips does migration incur,
 what is the purpose of each round-trip, and what is the corresponding ratio of
@@ -61,58 +76,20 @@ operations of checkpointing and restoring threads, as well as any TCP queuing
 delays incurred by the source machine while its threads are paused, waiting for
 the migration to return.
 
+\subsection{Correctness}
 
-\subsection{Experiments}
-
-We measure the performance of several $n$-party example programs of our own
-design and drawn from the literature.
+We want to assert correctness of data cloaking and resource coherence.
 %
-The \emph{richest} protocol copmutes the richest principal.
+For asserting correctness of data cloaking, we envision developing an external
+program that dumps each process's memory and scans for a given byte string,
+and running this program periodically and in tandem with the micro-benchmarks.
 %
-The \emph{GPS} protocol computes, for each participating principal, the other
-principal that is nearest ot their location; everyon learns their nearest
-neighbor without knowning anyone's exact location.
+Similarly, asserting resoure coherence may entail developing an external
+manager that records a snapshot of the distributed system's global state, and
+analyzes the state for consistency invariants.
 %
-The \emph{Auction} protocol computes the high bidder among a set of
-participating principals, as well as teh second-hgihest bid, which is revealed
-to everyone; only the auction holder learns who is the winning bidder.
+Such a manager may also be useful in deadlock detection.
 %
-
-
-
-\subsubsection{Macro-benchmarks}
-
-% nginx: apachebench
-% bind, knot DNS, nds: dnsperf
-% exim, postfix, qmail, sendmail: smtp-source
-%
-Give our use-cases of an HTTPS, DNS, and mail server, we stress test an
-implementation of each server running in a standard Linux environment, and
-compare request throughput and latency to the server running on top of Gemini.
-%
-Specifically we stress test the NGINX webserver using ApacheBench, the BIND DNS
-server using \texttt{dnsperf}, and the postfix mail server using
-\texttt{smtp-source}.
-
-
-For each server, we benchmark several deployment scenarios.
-%
-In particular, does the deployment have only the organization pinning data (one
-or more private keys), or does the service provider itself also pin data (such
-as a spam or web application firewall rules).
-%
-In the former case, only the organization runs a process-monitor.
-
-
-Furthermore, does the service support only one organization, or multiple?
-%
-For instance, the NGINX webserver can virtually host many sites, and thus,
-under Gemini, could migrate to different organizations based on the request.
-%
-The application server might also support different server models, such as
-multi-process or multi-threaded.
-%
-In a multi-process, multi-tenant configuration of NGINX, each worker process
-is single-threaded and could migrate to a different organization
-simultaneously, whereas in a multi-threaded configuration, only a single thread
-could migrate away from the service provider any time.
+Finally, in order to test that codomains properly validate execution state when
+restoring a thread, we imagine a set of fault-injection tests whereby one
+codomain attempts to switch to another at an invalid state.

@@ -1,66 +1,61 @@
 \section{Codomains Introduction}
 \label{sec:codomains-intro}
 
-% the problem setup
-
-When we build an application that requires the participation of mutually
-distrustful parties, our choices are: 
+A cooperative domain, or \emph{codomain}, is an isolation domain
+that a thread may migrate to over the course of its evolution, such as another
+process, another host, or an SGX hardware enclave.
 %
-\begin{enumerate}
-    \item Run the entire application in a secure execution environment, such as
-        a hardware enclave, or via translation to an MPC program.
-
-    \item Distribute the application;  each party locally executes
-        their sensitive piece of the computation.
-
-    \item Hybrid, ``mix-mode", schemes whereby each party locally executes
-        their sensitive piece of the computation, and jointly invoke a secure
-        enclave or MPC scheme for computations that combine the parties'
-        sensitive data.
-\end{enumerate}
-
-
-Our focus is designing and implementing operating system abstractions 
-that enable developers to write such hybrid applications as if they were
-monolithic, local applications.
+Our focus is on designing and implementing operating system abstractions that
+enable a developer to write a monolithic program that executes over multiple
+domains, with the underlying system being responsible for moving the execution
+between domains, maintaining resource consistency across domains, and
+restricting information flow among domains.
 %
-This motivation is not conceptually different from that of 
-remote procedure calls (RPCs):  with RPCs, developers code their applications
-using the familiar procedure call, but the calling process and the
-process containing the procedure being called execute on different
-hosts.
-%
-To the application proper, the fact that the call involves cross-host I/O
-is mostly transparent.
-%
-In our setting, the system abstractions define party-local and multi-party
-secure computations, and the underlying system manages moving the execution
-between the computation domains, maintaining resource consistency across
-domains, and restricting information flow among domains.
+In contrast to prior work in program partitioning, codomains present
+a language-neutral, run-time, mechanism for switching domains, rather than
+resorting to language-specific or compile-time techniques.
 
 
 
-As with RPCs, prior work in this area endeavors to hide the details of the
-resultant distributed system from the application developer.  
+Codomains are orthogonal to conclaves, though the implementation may
+use conclaves to support SGX domains.
 %
-Projects such as privtrans and Glamdring use developer-provided source code
-annotations and static analysis to assist the compiler in partitioning the
-monolithic application into separate programs.
+Codomains further differ from conclaves with respect to use-cases, and the
+method for constructing trust boundaries.
 %
-In contrast, Fabric, Wysteria, and secure goroutines expose partitioning as
-first-class language constructs, whereby developers programmatically indicate
-which statements execute in a specific domain, and what data is accessible to
-that domain.
+Whereas conclaves are a solution for preserving the confidentially of a single
+\footnote{
+Conclaves may comprise
+multiple parties, but these parties must trust one another (or, as in
+the case of NGINX multiplexing multiple parties, NGINX must be trusted
+to isolate one party's components from another).
+}
+party's data when running an application on an untrusted cloud,
 %
-In these systems, a trusted language runtime enforces isolation between
-domains.
+codomains can further express solutions for multi-party and
+federated computations.
+%
+With conclaves, a deployer statically specifies the trust boundaries based on
+which components (processes) may communicate with one another;
+%
+%Boundaries are binary; trust means unfettered communcation; no trust means no
+%communication.
+%
+with codomains, the boundaries themselves may change over
+the application's evolution, and data, rather than code, may drive the boundary
+construction.
+%
+Finally, whereas conclaves take an approach of hoisting the entire application
+into enclaves; codomains only use enclaves as needed over the application's
+evolution.
 
 
-Similar to prior work, we want to maintain the source-level abstraction of
-a monolithic program, but allow for dynamic, at run-time, mode switches.
-%
-Morever, we want to present a language-neutral mechanism for switching modes.
-%
-If mode-switching is dynamic and language-neutral, then orthogonal, application
-interposition techniques, may be layered onto the system to increase the
-transparency of the multi-domain environment with respect to the application.
+% TODO: sentence or two lead-in to the rest of the sections
+
+
+%If mode-switching is dynamic and language-neutral, then orthogonal, application
+%interposition techniques, may be layered onto the system to increase the
+%transparency of the multi-domain environment with respect to the application.
+
+
+

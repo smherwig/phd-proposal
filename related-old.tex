@@ -1,0 +1,326 @@
+\section{Related Work}
+\label{sec:related}
+
+We present an overview of trusted execution environments, and then describe
+three, not necessarily orthogonal techniques, for post-hoc adapting existing
+software to satisfy alternative trust assumptions. 
+
+
+\subsection{Trusted Execution Environments}
+
+Trusted execution environments (TEEs) provide hardware protections for running
+trusted portions of code with guarantees of confidentiality and integrity.  
+%
+Applications can be guaranteed that code executed within the TEE was run
+correctly and that any secrets generated during execution will remain safely
+within it as well.
+%
+A wide range of TEEs are available today, with varying functionalities.
+%
+We focus on Intel's Software Guard Extensions (SGX)\@.
+
+
+\parhead{Intel SGX Overview}
+%
+Intel's SGX provides a new mechanism for trusted
+hardware and software as an extension to the x86 instruction set~\cite{sgx,
+mckeen2013innovative}.  
+%
+A program called an \textit{enclave} runs at high
+privilege in isolation on the processor in order to provide trusted code
+execution, while an untrusted application can make calls into the enclave.
+%
+While these enclaves can be statically disassembled (so the code running in the
+enclave is not private), once an enclave is running, its internal state is
+opaque to any observer (even one with physical access), as are any secrets generated.  
+
+
+Enclaves must be measured and signed by their creator and cannot run without
+this signature, and the enclave state is checked against this measurement
+before running.  
+%
+An enclave can also cryptographically \textit{attest} to its current state, in
+order to prove that it correctly executed code \cite{sgx_provisioning,
+anati2013innovative}.  
+%
+Another feature is the ability to cryptographically \textit{seal} data to be
+used across multiple invocations of an enclave~\cite{anati2013innovative,
+sgx_sealing}.  
+%
+SGX also provides such features as trusted time and monotonic counters
+\cite{sgx-linux-sdk,sgx-trusted-time}.  
+%
+However, as enclave code is always executed in user mode, system calls
+must be proxied through the untrusted OS.
+
+
+\parhead{AMD-SEV Overview}
+%
+%Whereas Intel SGX guards fine-grained units of execution, AMD's Secure
+%Encryped Virtualization (SEV) is roughly the equivalent of an enclaved
+%virtual machine.
+%%
+%SEV is based upon AMD Memory Encryption Technology, which introduces an
+%AES-128 encryption engine inside the System on Chip (SoC) that transparently
+%encrypts and decrypts the data when it leaves or enters the SoC, respectively.
+%%
+%Encryption key management, such as generating, storing, and delivering the
+%keys, are carried out by the AMD secure processor and the encryption keys are kept
+%hidden from untrusted parts of the platform.
+%%
+%The secure processor provides a set of APIs for provisioning and managing the
+%platform in the cloud.
+%
+%
+%SEV allows individual VMs to encrypt their memroy pages using their own secure
+%keys; the VM's memory space is thus protected from from the hypervisor and
+%co-resident VMs.
+%%
+%When code and data arrive into the SoC, SEV tags all of the code and data
+%associated with the guest VM in the cache and limits access only to the tag's
+%owner VM.
+%%
+%The guest OS is able to specify which memory pages are encrypted through new
+%page table attributes.
+
+
+\parhead{Attacks}
+%
+We must address the recent rise of side-channel attacks against SGX, including
+the speculative execution attack Foreshadow~\cite{foreshadow,
+weisse2018foreshadow}.  
+%
+This attack allows for the extraction of not only the entire SGX enclave's
+memory contents but also the attestation and sealing keys.  
+%
+We note that this attack would break the security guarantees that we provide
+with conclaves.
+%
+Intel has stated that SGX is explicitly designed to not deal with side-channel
+attacks in its current state and leaves handling this up to enclave
+developers~\cite{sgx-sidechannel, sgx-developers}.
+%
+Regardless, Intel has released both microcode patches and recommendations for
+system level code that at the current time address Foreshadow and known related
+attacks \cite{sgx-patch, canella2018systematic, weisse2018foreshadow}.  
+%
+There is also ongoing research to address both speculative execution as well as
+other cache-based side-channel attacks on SGX and in general
+\cite{yan2018invisispec, oleksenko2018varys, canella2018systematic, shih2017t}.
+
+% TODO: add paragraph or two about attacks on SEV.
+
+
+% Each solution operates at a differnet level in the stack, more or less.
+% Handle TEE and non-TEE based solutions together.
+
+\subsection{Partitioning applications across trust domains} 
+% here, you can talk about program partitioning, both those that are aware of
+% TEEs, and those that came before.
+
+
+\parhead{Compiler Techniques}
+%
+Privtrans~\cite{privtrans} partitions a single program into two parts: a
+privileged program called the monitor and an unprivileged program called the
+slave. 
+%
+The monitor and slave run as separate processes, but communicate and cooperate
+to perform the same function as the original program.
+%
+This is process-level isolation, and the monitor can be seen as interposing
+between privileged operations and the main execution in the slave.
+
+
+Privtrans allows a developer to add privilege separation to source code via
+source-level annotations of variable and functions to indicate privileged
+operations.  
+%
+Privtrans then propagates attributes, performs static analysis to find
+privileged call sites, and performs C-to-C translation to partition the input
+source code into the source code for the monitor and slave. 
+%
+Monitor must mediate access to all privileged resources, including the data
+derived from such a resource; it is not sufficient for the monitor to only
+perform access control.
+%
+In contrast, developers can augment monitors with application-specific
+downgrade policies to make otherwise priviledged data flow from the monitor to
+the slaves.  
+
+
+\parhead{Protocol Refactoring}
+%
+Other work allows the organization to retain ownership of its private keys by
+changing the server-side implementation of TLS\@.
+%
+SSL Splitting~\cite{ssl-splitting} leverages the fact that a TLS stream
+comprises data records and authentication records (MACs), and develops a new
+protocol in which the organization sends the authentication records and the
+provider merges them with the data records to form the complete TLS stream.
+%
+Cloudflare's Keyless SSL~\cite{keyless-ssl} takes advantage of the fact that
+TLS only uses the website's private key in a single step of the TLS handshake.
+%
+Like SSL Splitting, Keyless SSL keeps the master private key off of, and unknown
+to, the proxy, but unlike SSL Splitting, Keyless SSL does not provide for
+content provider endorsement of the content the proxy serves.  
+%
+Neither SSL splitting nor Keyless SSL provides for the protection of the
+session keys from the provider.
+
+
+\parhead{Virtualization Techniques} 
+%
+Several works~\cite{overshadow,inktag} that predate Intel SGX and AMD-SEV
+extend the isolation capabilties of a hypervisor to give storng safety
+guarantees to applications even in the presence of malicious guest operating
+system.
+%
+These systems prevent the guest operating system from reading or modifying
+application code, data, and registers through a technique called
+\emph{cloaking}, in which the application sees a normal view of its memory
+pages, but the OS an encrypted view.
+%
+Cloaking allows resources to remain accessible to the OS, yet secure,
+permitting the OS to manage resources without compromising application
+privacy or integrity.
+%
+Inktag also enables the hypervisor to verify the behavior of the untrusted
+commodity operating system, as by checking that the memory mappings requested
+by the application match those returned by the OS.
+
+
+\subsection{Running (trusted) legacy applications in TEEs}
+%
+Various works use SGX as a mechanism for achieving shielded execution of
+unmodified, trusted, legacy applications.
+%
+These works generally differ in how much of the application's code runs
+within the enclave.
+
+
+\parhead{Minimal TCB approachs}
+%
+At one extreme, TaLoS~\cite{talos} simply ports the LibreSSL library to SGX so
+that the application terminates TLS connections in an enclave; the rest of
+the application remains outside the enclave, unchanged.
+%
+% emphasize: smaller TCB, 
+Several works~\cite{glamdring, panoply} generalize this approach by using developer
+provided source-level annotations to partition an application into sensitive and
+non-sensitive commponts, with the sensitive components running in an enclave.
+%
+In particular, Glamdring~\cite{glamdring} takes a similar approach to
+Privtans~\cite{privtrans}, while also aiding a backslicing technique so that
+fucntions and variables that influence a sensitive output are also isolated to
+an enclave.  
+%
+Panoply~\cite{panoply} focuses less on the  partitioning scheme, but instead
+allows the application to be partitioned into multiple enclaves, and
+enforces run-time data and control flows between the resultant enclaves.
+
+
+\parhead{Library Operating System Approaches}
+%
+At the other extreme, SCONE~\cite{scone} moves the entire C library into the enclave.
+%
+Haven~\cite{haven} and Graphene~\cite{graphene} carry this approach further by
+implementing kernel functionality in an enclave by means of a library operating
+system (libOS).  libOSes refactor a traditional OS kernel into a user-land
+library that loads a program.
+%
+The program's C library is modified to redirect system calls to the libOS, which
+in turn either services the calls internally or calls into the untrusted OS
+when the host's resources are needed.
+%
+Aurora~\cite{liang2018aurora} extends the libOS from the SGX enclave to System
+Management Mode (SMM) by running device drivers in SMM memory.
+
+
+\subsection{Sandboxing (untrusted) applications via information flow controls}
+
+\parhead{OS-Level IFC}
+Decentralized information flow control (DIFC) enhanced operating systems allow
+dynamic labeling of OS abstrations, such as processes and files, and enforce
+access control based on Denning's lattic model for information flow
+security~\cite{}.
+%
+The tags represent different rights (capabilities) with respect to the data
+that the process is allowed to read or write.
+%
+Using tags, these systems can enforce the classical secrecy and integrity policies of
+``no read up, no write down", or an integrity policy of ``no read down, no
+write up", between the objects in the system.
+%
+Additional policies, such as \emph{export protection} are possible, in which a
+process cannot have both an uncontrolled channel (e.g., a socket) open and
+access to private data that it cannot declassify, as well as
+policies for stringent system-wide \emph{read-protection} and \emph{integrity
+protection}.
+%
+These process-level information flow models are coarse grained and cannot track
+sensitive information \emph{within} untrusted applications.
+
+
+\parhead{Fine-Grained IFC}
+%
+Fine-grained information flow tracking (IFT) is a technique whereby execution
+runtime tags memory and registers containing sensitive data with labels (also
+called taint or taint markings) and propagates these labels in
+acccordance with the computation.
+%
+Instrumentation is transparent to the application process, as the application
+observes the same addresses and same values as it would in an uninstrumented
+execution.
+%
+IFT traditionally uses a source and sink model whereby labels are
+assigned at sources and checked at sinks; the labels themselves are opaque,
+and are interpreted by application-specific policy.
+%
+Most work in this area has been specifically motivated by detection of control
+flow hijacking attacks, such as buffer overflows, and involves tainting of
+program inputs, and trapping of control transfers to tainted target addresses.
+%
+However, IFT is also used to enforce mandatory access control on data and
+derived data, and thus a restriction on the flow of information between
+the system's objects (e.g., users, processes, files).
+
+
+Fine-grained IFT can either be applied at the process- or system-level.
+%
+A standard approach for process-level information flow tracking is to run
+the process in an emulator, such as Valgrind, Intel Pin, or DynamoRIO; the
+emulator serves as a reference monitor, and dynamically tracks data flows.
+%
+In contrast, full-system IFT involves running the guest system in a hardware
+emulator (e.g., QEMU) that has been augmented with machine instruction analysis
+and taint tracking capabilities.
+%
+As an optimization, and for security isolation, a hypervisor may dynamically
+switch execution between emulated execution when processing tainted data, and
+native virtualized execution when processing untainted data.
+%
+Full-system IFT systems also propagate taint to the filesystem (as by storing
+taint in a file's extended attributes) and across the network (as by placing
+labels in a packet's IP options).
+
+
+\parhead{Uses with Secure Hardware}
+% TODO: also talk about compiler-based techniques (e.g., Moat)
+%
+Ryoan presents a request-response execution model that allows mutually
+distrustful parties to process sensitive data in a distributed fashion on
+untrusted infrastructure, without any party leaking secret data.
+%
+Ryoan runs each party's processing modules in a trusted userspace sandbox,
+which in turn is hosted in an SGX enclave.
+%
+Each module tags its output, essentially performing taint tracking at
+enclave-level granularity, where the taint indicates which encalves have seen
+secret data.
+%
+When operating on tainted data, Ryoan ensures that the module cannot leak data
+by controlling explicit I/O channels, obfuscating network traffic, forbidding
+use of the fileystem, and ensuring that input is only processed once.
+

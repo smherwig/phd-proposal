@@ -1,8 +1,6 @@
 \section{Codomains Background}
 \label{sec:codomains-background}
 
-\subsection{Applications}
-
 We focus on two use cases that involve multiple parties cooperatively running
 an application where the input of at least one party is confidential:
 (1) outsourcing TLS-based applications to a third party, and (2) federated
@@ -26,7 +24,7 @@ patch, and deployers to configure, such applications with the property that the
 company retains exclusive custody of its private keys.
 
 
-\parhead{Federated Data Processing}
+\parhead{Collaborative Data Processing}
 %
 In this setup,  the aggregate dataset consists of the confidential, local,
 datasets of multiple parties.
@@ -59,6 +57,58 @@ information about the private data samples.
 Thus, orthogonal to our system, the application may additionally require
 methods for achieving differential privacy, such as by adding a carefully
 chosen amount of noise to the local results.
+
+
+\subsection{Threat Model}
+
+We assume an honest but curious (HbC) threat model: each party faithfully
+executes the program, but may analyze their portion of the execution to try to
+recover the private data of other principals.
+%
+We assume that the parties trust the application; that is, the application does
+not deviate abitrarily from its stated purpose, and does not actively try to
+leak sensitve data.
+%
+We assume that the application is bug-free, and thus our model omits external
+actors, such as a remote attacker.
+
+
+An HbC model is not inherent, but is reasonable for our use cases,
+given the mutually beneficial incentives among the parties, and further
+simplifies the system design.
+%
+Consider, in contrast, a more adversarial model where the parties, or the
+application itself, may abuse the interface for domain switching---as by
+switching at an unexpected state, or switching to a malicious code page---for
+the purpose of actively leaking sensitive data. 
+%
+In this model, the target domains must first, externally, validate the
+execution state against an expected starting condition before commencing
+execution.
+
+
+An interesting design point related to the threat model is whether the
+application is globally public, or whether some portions are private and thus
+confidential to a party. 
+%
+For instance, in the scenario of a company outsourcing a web server to a CDN,
+the CDN's web server may be proprietary, and the CDN operator in turn may be
+unwilling to allow the server's execution to switch to a company's domain
+for fear of leaking proprietary knowledge.
+%
+Naively, this scenario reduces to specifying that private code pages should be
+pinned to the owning domain, and that execution may switch domains only at
+non-private points in the application's execution.
+%
+The tricky aspect is that the data written by private code pages should,
+likewise, be private, as sharing such data pages could reveal aspects of
+the private code.
+%
+We consider this feature as future work, but briefly revisit the idea in
+\S\ref{sec:data-directed-switching}.
+
+
+Typical of other work in this area, we consider side-channels out of scope.
 
 
 
@@ -154,53 +204,3 @@ chosen amount of noise to the local results.
 %achieve output privacy.
 
 
-\subsection{Threat Model}
-
-We assume an honest but curious (HbC) threat model: each party faithfully
-executes the program, but may analyze their portion of the execution to try to
-recover the private data of other principals.
-%
-We assume that the parties trust the application; that is, the application does
-not deviate abitrarily from its stated purpose, and does not actively try to
-leak sensitve data.
-%
-We assume that the application is bug-free, and thus our model omits external
-actors, such as a remote attacker.
-
-
-An HbC model is not inherent, but is reasonable for our use cases,
-given the mutually beneficial incentives among the parties, and further
-simplifies the system design.
-%
-Consider, in contrast, a more adversarial model where the parties, or the
-application itself, may abuse the interface for domain switching---as by
-switching at an unexpected state, or switching to a malicious code page---for
-the purpose of actively leaking sensitive data. 
-%
-In this model, the target domains must first, externally, validate the
-execution state against an expected starting condition before commencing
-execution.
-
-
-An interesting design point related to the threat model is whether the
-application is globally public, or whether some portions are private and thus
-confidential to a party. 
-%
-For instance, in the scenario of a company outsourcing a web server to a CDN,
-the CDN's web server may be proprietary, and the CDN operator in turn may be
-unwilling to allow the server's execution to switch to a company's domain
-for fear of leaking proprietary knowledge.
-%
-Naively, this scenario reduces to specifying that private code pages should be
-pinned to the owning domain, and that execution may switch domains only at
-non-private points in the application's execution.
-%
-The tricky aspect is that the data written by private code pages should,
-likewise, be private, as sharing such data pages could reveal aspects of
-the private code.
-%
-We consider this feature as future work, but briefly revisit the idea in
-\S\ref{sec:data-directed-switching}.
-
-
-Typical of other work in this area, we consider side-channels out of scope.

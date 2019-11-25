@@ -1,0 +1,156 @@
+\section{Gemini Core Components}
+\label{sec:gemini-abstractions}
+
+
+\subsection{Co-processes}
+
+A co-process is a userspace monitor that controls the resources and
+privileges of a client process
+%
+Abstractly, the monitor and client are connected with pipe and may perform
+generic IPC\@.
+%
+However, unlike a pipe, a client may yield to the monitor; the client's thread
+is suspended, and the monitor may modify the thread's execution state.
+%
+The monitor may resume the client process, perform, paging,
+interpose on system calls, apply network filters, or force the client to yield.
+%
+A client process may have only a single monitor, but a monitor may be the
+co-process for multiple clients.
+%
+The features of a co-process are a mix of ptrace, userfaultfd, and a userspace
+Linux Security Module (LSM).  
+
+
+%\begin{table*}
+%\resizebox{\textwidth}{!}{
+%
+%\centering
+%\rowcolors{2}{gray!15}{white}
+%    \begin{tabular}{@{}ll@{}}
+%        \textbf{Function}        & \textbf{Description} \\
+%        \hline
+%        \texttt{coproc\_create} & foo bar baz foo bar baz foo bar baz foo bar baz \\
+%        \texttt{coproc\_resume} & \\
+%        \texttt{coproc\_control}& \\
+%        \texttt{coproc\_attach} & \\
+%        \texttt{coproc\_yield}  & \\
+%        \texttt{coproc\_call}   & \\
+%\end{tabular}
+%
+%}
+%\caption{libcoproc API}
+%\label{tab:libcoproc-api}
+%\vspace*{-10pt}
+%\end{table*}
+
+\parhead{Creating a co-process}
+
+\begin{lstlisting}[frame=single,caption={Monitor runloop},captionpos=b]
+monfd = coproc_create(monitor_id)
+listen(monfd)
+fdset.add(monfd)
+
+while True:
+    poll(fdset)
+    if monfd.ready:
+        fd = accept(monfd)
+        fdset.ad(fd)
+    else:
+        msg = readmsg(fd)
+        if msg.event == YIELD:
+            # do something
+            coproc_resume(fd)
+        else:
+            # do something
+\end{lstlisting}
+
+
+\parhead{Attaching to a co-process}
+
+\begin{lstlisting}[frame=single,caption={Launching a program under a monitor},captionpos=b]
+fd = coproc_attach(monitor_id)
+execve(program)
+\end{lstlisting}
+
+
+\parhead{Page Fault Handling}
+
+
+\parhead{Descriptor Proxying}
+
+
+\parhead{Security Decisions}
+
+
+\subsection{Distributed Container}
+
+TODO: describe and give pseudo-code for building a distributed container
+abstraction out of the migration and pinning abstractions.
+
+%Gemini migrates at the thread-level.
+%%
+%When a thread attempts to access a resource pinned to a target domain,
+%the system monitor suspends the thread, and transfers the
+%thread's execution to the target.
+%%
+%The thread runs on the target until it satisfies a \emph{migration condition},
+%and then migrates back to the source.
+%%
+%On return, the source updates the thread's context and the process's memory
+%space, and resumes the thread.
+
+
+\parhead{Distributed Shared Memory}
+
+TODO: describe and give pseudo-code for building a DSM abstrction on top of the
+coproc abstraction.
+
+%Similar to prior systems, Gemini integrates distributed shared memory (DSM) and
+%virtual memory management.
+%%
+%Each domain runs a DSM manager and page server that cooperates with the VM
+%manager to service page faults.
+%%
+%The VM manager refers remote memory access to the DSM manager,
+%which in turn satifies the request using a coherence protocol with the peer
+%domain's page server.
+%%
+%Thus, a page fault to local memory is indistinguishable from a page fault to
+%remote memory.
+
+\parhead{Memory and File Pinning}
+
+TODO: describe and give pseudo-code for building a memory and file pinning
+abstraction on top of the DSM abstraction and file extended attributes.
+
+%\parhead{Distributed Filesystem}
+%%
+%Gemini maintains a consistent filesystem view among migrated and
+%non-migrated processes by allowing a thread's file descriptor table on the
+%target to proxy calls to a fileserver back on the source.
+%%
+%This has additional benefit of obviating the need to replicate or update
+%public files during migration.
+%%
+%Domains may pin file descriptors, such that the descriptor can only be used
+%in that domain.
+%%
+%Likewise, if the target thread writes tainted data to a remote descriptor, the
+%associated file transfers to, and becomes pinned by, the target; any processes
+%on source with that file open have subsequent operations on that descriptor
+%proxied to the target.
+
+\subsection{Memory and File Labeling}
+
+TODO: describe what this abstraction looks like
+Describe how policy modules are built on top of memory and file labeling and
+the coproc abstraction.
+
+
+\subsection{Migration}
+
+TODO: describe what this abstraction looks like
+
+

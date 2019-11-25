@@ -129,7 +129,7 @@
 @inproceedings{lightweight-rpc,
  author = {Brian N. Bershad and Thomas E. Anderson and Edward D. Lazowska and Henry M. Levy},
  title = {Lightweight Remote Procedure Call},
- booktitle = SOSP
+ booktitle = SOSP,
  year = {1989},
 }
 
@@ -140,6 +140,13 @@
  year = {1995},
 } 
 
+@inproceedings{xen-art,
+ author = {Barham, Paul and Dragovic, Boris and Fraser, Keir and Hand, Steven and Harris, Tim and Ho, Alex and Neugebauer, Rolf and Pratt, Ian and Warfield, Andrew},
+ title = {Xen and the Art of Virtualization},
+ booktitle = SOSP,
+ year = {2003},
+}
+
 @article{reflections-on-trusting-trust,
  author = {Thompson, Ken},
  title = {Reflections on Trusting Trust},
@@ -148,7 +155,6 @@
  volume = {27},
  number = {8},
  year = {1984},
- pages = {761--763},
 }
 
 @article{distributed-snapshots,
@@ -158,7 +164,6 @@
  volume = {3},
  number = {1},
  year = {1985},
- pages = {63--75},
 } 
 
 @article{transparent-process-migration,
@@ -168,7 +173,6 @@
  volume = {21},
  number = {8},
  year = {1991},
- pages = {757--785},
 }
 
 @inproceedings{ryoan,
@@ -180,8 +184,8 @@
 } 
 
 @inproceedings{lwcs,
+ title = {Light-weight Contexts: An {OS} Abstraction for Safety and Performance},
  author = {Litton, James and Vahldiek-Oberwagner, Anjo and Elnikety, Eslam and Garg, Deepak and Bhattacharjee, Bobby and Druschel, Peter},
- title = {Light-weight Contexts: An OS Abstraction for Safety and Performance},
  booktitle = OSDI,
  year = {2016},
 }
@@ -221,6 +225,7 @@
  booktitle = PLDI,
  year = {2005},
 } 
+
 @inproceedings{taint-demand-emulation,
  author = {Ho, Alex and Fetterman, Michael and Clark, Christopher and Warfield, Andrew and Hand, Steven},
  title = {Practical Taint-based Protection Using Demand Emulation},
@@ -276,7 +281,7 @@
 
 @inproceedings{arm-trusted-language-runtime,
  author = {Santos, Nuno and Raj, Himanshu and Saroiu, Stefan and Wolman, Alec},
- title = {Using ARM Trustzone to Build a Trusted Language Runtime for Mobile Applications},
+ title = {Using {ARM Trustzone} to Build a Trusted Language Runtime for Mobile Applications},
  booktitle = ASPLOS,
  year = {2014},
 } 
@@ -533,9 +538,10 @@
 }
 
 @misc{plan9,
-	author = {Rob Pike and Dave Presotto and Sean Dorward and Bob Flandrena and Ken Thompson and Howard Trickey and Phil Winterbottom},
     title = {Plan 9 from {Bell} {Labs}},
+	author = {Rob Pike and Dave Presotto and Sean Dorward and Bob Flandrena and Ken Thompson and Howard Trickey and Phil Winterbottom},
     year = {1995},
+    howpublished = {Computing Systems, 8(3)}
 }
 
 @misc{tls-session-tickets,
@@ -900,7 +906,7 @@
 
 
 
-@inproceedings{taint-tracking,
+@inproceedings{dynamic-taint-analysis,
 	title={Dynamic Taint Analysis for Automatic Detection, Analysis, and Signature Generation of Exploits on Commodity Software},
 	author={James Newsome and Dawn Song},
 	booktitle=NDSS,
@@ -2111,16 +2117,6 @@
   year={2009},
 }
 
-@article{barham2003xen,
-  title={Xen and the art of virtualization},
-  author={Barham, Paul and Dragovic, Boris and Fraser, Keir and Hand, Steven and Harris, Tim and Ho, Alex and Neugebauer, Rolf and Pratt, Ian and Warfield, Andrew},
-  journal={ACM SIGOPS Operating Systems Review},
-  volume={37},
-  number={5},
-  pages={164--177},
-  year={2003},
-  publisher={ACM}
-}
 
 @inproceedings{nurmi2009eucalyptus,
   title={The eucalyptus open-source cloud-computing system},
