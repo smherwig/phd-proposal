@@ -29,7 +29,7 @@ one that operates in an address space distinct from its client process: instead 
 trapping directly to the kernel, the process traps to its coprocess, which may
 either service the trap on its own, or forward the trap to the kernel.
 
-%% TODO:  sentence about why in userspace, or some tie-in to exokernels
+%% TODO: sentence about why in userspace, or some tie-in to exokernels
 
 %% suggest that the concept exists in narrow forms.
 Coprocesses are not a novel idea: operating systems already partially expose the
@@ -80,7 +80,7 @@ The semantic difference between \texttt{coproc\_raise} and
 process does not receive a return value and does not expect to resume
 execution at the instruction following the call to \texttt{coproc\_raise}.
 %
-In these respects, \texttt{coproc\_raise} is analagous to the process raising
+In these respects, \texttt{coproc\_raise} is analogous to the process raising
 an exception.
 
 \begin{lstlisting}[
@@ -226,6 +226,16 @@ The \texttt{rspec} parameter of \texttt{co\_attach} specifies the initial
 export policy; \texttt{co\_getrspec} may latter refine this policy (where
 the \texttt{fd} parameter is the descriptor for the peer codomain).
 
+
+I implement the API entirely on top of the coprocess API of
+Listing~\ref{lst:coproc-api}; in particular, \texttt{co\_attach},
+\texttt{co\_getrspec} and \texttt{co\_setrspec} invoke \texttt{coproc\_call},
+and \texttt{co\_switch} invokes \texttt{coproc\_raise}.
+%
+Auxiliary functions like \texttt{co\_pinmem} used in
+Listing~\ref{lst:isolating-key}, and analogous functions for pinning other
+resource types, are implemented on top of \texttt{co\_setrspec}.
+
 % XXX: compare to 9p protocol: http://man.cat-v.org/plan_9/5/intro
 \begin{lstlisting}[
     frame=single,
@@ -252,16 +262,6 @@ int co_setrspec(int fd, struct co_rspec *rspec)
 %\end{lstlisting}
 %
 
-%We implement the API entirely on top of the coprocess API of
-%Listing~\ref{lst:coproc-api}; in particular, \texttt{co\_attach},
-%\texttt{co\_getrspec} and \texttt{co\_setrspec} invoke \texttt{coproc\_call},
-%and \texttt{co\_switch} invokes \texttt{coproc\_raise}.
-%%
-%Auxiliary functions like \texttt{co\_pinmem} used in
-%Listing~\ref{lst:isolating-key}, and analogous functions for pinning other
-%types of resources, are implemented on top of \texttt{co\_setrspec}.
-%
-%
 %%
 %In the \texttt{load\_key} function of Listing~\ref{lst:isolating-key}, the
 %application calls \texttt{read\_file} on line 7,
@@ -274,7 +274,7 @@ int co_setrspec(int fd, struct co_rspec *rspec)
 %file; would \texttt{domain\_pub} be able to view it? 
 %%
 %
-%% XXX: you need the prpocess on B to call co_setrspec() before execve() to
+%% XXX: you need the process on B to call co_setrspec() before execve() to
 %% specify the resources.
 %
 %%
