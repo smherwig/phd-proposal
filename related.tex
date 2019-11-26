@@ -31,11 +31,8 @@ sgx_sealing}.
 SGX also provides such features as trusted time and monotonic counters
 \cite{sgx-linux-sdk,sgx-trusted-time}.  
 %
-However, an enclave currently has no access to networking functionality itself,
-so it must rely on the untrusted application for all network interactions.  
-%
-In fact, enclaves are prohibited from making any system calls, so these must be
-proxied through the untrusted OS as well.
+However, an enclaves cannot directly make systems calls, and such calls must be
+proxied through the untrusted OS\@.
 
 
 \parhead{Running Legacy Applications in SGX}
@@ -43,12 +40,11 @@ proxied through the untrusted OS as well.
 Various works use SGX as a mechanism for achieving shielded execution of
 unmodified legacy applications.
 %
-At the other extreme, SCONE~\cite{scone} moves the entire C library into the enclave.
-%
-%% SCONE~\cite{scone} instead moves the entire C library into the enclave, and
-Haven~\cite{haven} and Graphene~\cite{graphene} carry this approach further by
-implementing kernel functionality in an enclave by means of a library operating
+SCONE~\cite{scone} moves the entire C library into the enclave, while
+Haven~\cite{haven} and Graphene~\cite{graphene} 
+implement kernel functionality in an enclave by means of a library operating
 system (libOS).
+%
 libOSes refactor a traditional OS kernel into a user-land library that loads a
 program.
 %
@@ -130,12 +126,14 @@ taint-tracking systems allow for data declassification.
 
 % lead-in to single vs.  multi-party
 Although program partitioning's original purpose was to reduce the attack
-surface an application, it has more recently found use as a technique for
+surface of an application, it has more recently found use as a technique for
 running applications that involve the joint resources of distrustful parties.
 %
 I divide the prior work into the specific case of a single-party shielding
 some part of the application from an untrusted cloud, and the general case of
 multiple parties each shielding some part of the application from one another.
+%
+I also discuss tangential work that strictly partitions at the protocol layer.
 
 
 \parhead{Single-party shielding}
@@ -231,7 +229,7 @@ set of enclaved classes represents a trust domain.
 Civet's contributions include type-checking inputs to enclaved
 objects (thereby guarding against polymorphic type-confusion), and dynamic
 taint-tracking of objects instantiated inside of trusted code or provisioned
-from a secure channel to prevent data leakage.
+from a secure channel, to prevent data leakage.
 
 
 Ryoan~\cite{ryoan} also uses SGX enclaves, but assumes a directed acyclic graph
@@ -328,7 +326,7 @@ jointly among parties.
 
 \parhead{Protocol-level partitioning}
 %
-In light of the challange of composing  TLS with HTTP proxies, several lines of
+In light of the challenge of composing  TLS with HTTP proxies, several lines of
 work instead partition the TLS protocol to enable origin servers to retain
 ownership of their private keys.
 %
