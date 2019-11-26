@@ -28,7 +28,7 @@ the performance and security that the web relies on~\cite{securing-cdns}.
 
 
 
-As a CDN requires the company's private TLS to key serve content over HTTPS,
+As a CDN requires the company's private TLS key to serve content over HTTPS,
 the \emph{status quo} is for the company to share or otherwise entrust the CDN
 with the application's private keys.
 %
@@ -65,32 +65,35 @@ parameters from each party's locally-trained model.
 
 
 \subsection{Goals}
-At a high-level, our goal is to make hetergeneous trust a concern
+At a high-level, my goal is to make heterogeneous trust a concern
 of the application's run-time execution environment, rather than a concern of
 the application developer.
 %
-I distill our overarching goal down to three specifics:
+I distill my overarching goal down to three specifics:
 
 \begin{enumerate}
-\item \textbf{Preserve confidentiality of private data:} The execution
-environment \emph{must} maintain the confidentiality of the private keys and
-private data sets of each party.
-\item \textbf{Ensure data integrity:} The execution environment \emph{should}
-    preserve the integrity of each party's data.
+\item \textbf{Preserve confidentiality of private data:}
+    The execution environment \emph{must} maintain the confidentiality of the
+    private keys and private data sets of each party.
+
+\item \textbf{Ensure data integrity:} 
+    The execution environment \emph{should} preserve the integrity of each
+    party's data.
+
 \item \textbf{Require minimal changes to existing applications:}
-    The execution environment \emph{should} maintain the abstraction of a monolithic
-application, and the transparency of the run-time's partitioning of the
-application across trust domains.
-%
-configuration.
+    The execution environment \emph{should} maintain the abstraction of a
+    monolithic application; if the run-time partitions the application
+    across trust domains or otherwise uses a distributed execution
+    environment, such an environment \emph{should} be transparent to the
+    application.
 \end{enumerate}
 
 % broader impact
-If successful, I will not only improve the security and privacy of the
-involved parties, but also enable more flexible application deployment options,
-as well as support the development of new applictaions that leverage the
-collective knowledge of private data sets while respecting the privacy of the
-individuals represented in the data.
+If successful, I will improve the security and privacy of the involved parties,
+thereby enabling more flexible application deployment options, and supporting
+the development of applications that leverage the collective knowledge of
+private data sets.
+
 
 \subsection{Threat Model}
 
