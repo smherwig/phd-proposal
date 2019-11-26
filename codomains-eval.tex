@@ -6,7 +6,7 @@
 
 \parhead{Webserver}
 %
-I evalute the request throughput and latency of a webserver, such as NGINX,
+I evaluate the request throughput and latency of a webserver, such as NGINX,
 running in a standard Linux environment, and compare against a configuration of
 the webserver running with codomains, where a separate domain isolates each
 website's private TLS key.
@@ -16,8 +16,8 @@ static partitioning schemes~\cite{eleos,glamdring,privtrans} that achieve
 the same isolation.
 %
 When comparing to static partitioning schemes, I am interested not only in the
-performance differences, but also how the the boundaries determined by each
-scheme differ.
+performance differences, but also the difference in the boundaries that
+each scheme determines.
 %
 The benchmark affords multiple variants, such as investigating how codomains
 scale with multiple tenants (multiple websites multiplexed by the same
@@ -35,8 +35,9 @@ how host-codomains compare to enclave-codomains.
 
 \subsection{Micro-benchmarks}
 
-With the micro-benchmarks, I am interested in isolating the cost of each
-facet of codomains---thread migration, taint tracking, the DSM protocol.
+With the micro-benchmarks, I am interested in isolating and measuring the cost
+of each facet of codomains---thread migration, taint tracking, the DSM
+protocol.
 %
 For such purposes, I envision developing a small set of multi-party programs
 drawn from the literature, such as:
@@ -57,13 +58,13 @@ participating principals, as well as the second-highest bid, which is revealed
 to everyone; only the auction holder learns the winning bidder.
 \end{widelist}
 
-In the case of the timestamp signing server, I am interested in how a packet
-capture of the migration compares to that of an alternative RPC-based
-implementation, such as keyless SSL\@?
+For the timestamp signing server, I am interested in how closely a
+packet capture of the thread migration between codomains approximates
+that of an alternative RPC-based implementation, such as keyless SSL\@?
 %
-In particular, how much traffic and how many round-trips does migration incur,
-what is the purpose of each round-trip, and what is the corresponding ratio of
-goodput to throughput?
+In particular, how much traffic and how many round-trips does a codomain switch
+incur, what is the purpose of each round-trip, and what is the corresponding
+ratio of goodput to throughput?
 %
 Moreover, is each migration identical?
 
@@ -73,8 +74,8 @@ migration and the related operations.
 %
 Direct overhead costs include network latency, while indirect costs include the
 operations of checkpointing and restoring threads, as well as any TCP queuing
-delays incurred by the source machine while its threads are paused, waiting for
-the migration to return.
+delays incurred by the source host while its thread is paused, waiting for
+a return migration.
 
 \subsection{Correctness}
 
@@ -84,7 +85,7 @@ For asserting correctness of data cloaking, I envision developing an external
 program that dumps each process's memory and scans for a given byte string,
 and running this program periodically and in tandem with the micro-benchmarks.
 %
-Similarly, asserting resoure coherence may entail developing an external
+Similarly, asserting resource coherence may entail developing an external
 manager that records a snapshot of the distributed system's global state, and
 analyzes the state for consistency invariants.
 %

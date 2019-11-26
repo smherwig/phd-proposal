@@ -1,2 +1,34 @@
 \section{Conclusion}
 \label{sec:conclusion}
+% restate: 
+%   - problem
+%   - work you have done to solve this
+%   - work you propose
+%   - what success means
+
+In this proposal, I discuss the problem of running applications that
+assume a monolithic trust setting under conditions where that assumption no
+longer holds, as due to a multi-party deployment or input data.
+%
+I posit that a major difficulty in solving this problem is the lack of support
+that operating systems and programming languages offer for expressing
+computation over an execution model that involves heterogeneous trust.
+%
+My approach is to apply operating system designs and fine-grained information
+flow control techniques to hoist, or otherwise partition, the execution
+environment into trust boundaries, thereby making the details of moving the
+execution between trust domains, and restricting information flow among domains, a
+concern of the run-time execution environment, rather than the application
+developer.
+% 
+A primary goal of this approach is to keep the changes to the execution environment
+transparent to the applications, such that these techniques allow for
+\emph{post-hoc} refinements of a legacy application's trust model.
+% 
+I describe my prior work of enhancing library operating system for Intel SGX
+enclaves,and propose codomains, an execution model tha allows an application to
+dynamically switch execution to different domains.
+%
+If successful, I will enable application deployment options that preserve
+the privacy of the involved parties, as well as support the development of
+applications that securely leverage the collective value of private data sets.
