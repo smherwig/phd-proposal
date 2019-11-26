@@ -97,11 +97,8 @@ private data sets.
 
 \subsection{Threat Model}
 
-When I speak of trust, colloquially I  mean ``expect". 
-%
-In this setting, trust is an expectation that a party or application operates in
-its stated purpose, and, in particular, does not purposefully leak private
-data.
+Trust is an expectation that a party or application operates in its stated
+purpose, and, in particular, does not purposefully leak private data.
 %
 The goal of an adversary is to leak the private data of another party involved
 in the computation.
@@ -109,9 +106,13 @@ in the computation.
 I assume that a party trusts their software, and transitively, any software
 written by a trusted party.
 %
-I assume that the parties trust the application; guaranteeing that an
-\emph{untrusted}, arbitrary, application does not leak sensitive data is
-difficult, as such guarantees would entail restricting the application.
+In fact, in this work, I  assume that the parties trust the application proper,
+and that the only place for mistrust is with the parties that run the
+application.
+%
+Indeed, guaranteeing that an \emph{untrusted}, \emph{arbitrary}, application
+does not leak sensitive data is difficult without restrictions on the
+application.
 
 
 I allow myself to assume several threat models.
@@ -123,9 +124,9 @@ recover the private data of other principals.
 The strongest threat model is a byzantine faulty adversary, where a party may
 abuse the interface between their execution, and that of another party.
 %
-The Iago class of semantic attacks~\cite{iago-attacks}, which violate
-tacit assumptions in inter-domain procedure calls---such as system calls,
-enclave calls, or general RPCs---fall under this behavior.
+The \emph{Iago} class of semantic attacks~\cite{iago-attacks}, which violate
+tacit assumptions in inter-domain procedure calls---system calls, enclave
+calls, or RPCs---fall under this behavior.
 %
 In this model, parties must validate the execution state against expected
 conditions during inter-domain transactions.
@@ -134,7 +135,7 @@ conditions during inter-domain transactions.
 There are two additional assumptions which I sometimes consider that
 influence system design.
 %
-The first is whether the application if bug-free, or whether is may, due to
+The first is whether the application is bug-free, or whether it may, due to
 programmer error, inadvertently leak data.
 %
 If I allow buggy applications, then the design must not only provide isolated
@@ -143,10 +144,10 @@ execution, but also a sandbox for information flow.
 The second is whether the application is globally public, or whether some
 portions are private and thus confidential to a party. 
 %
-For instance, in the scenario of a company outsourcing a web server to a CDN,
+For instance, in the scenario of a company outsourcing website hosting to a CDN,
 the CDN's web server may be proprietary.
 %
-In short, must the system handle private code in addition to private data.
+In such cases, the system must handle private code in addition to private data.
 
 
 Typical of other work in this area, I consider side-channels out of scope.
