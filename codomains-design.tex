@@ -302,35 +302,33 @@ int co_setrspec(int fd, struct co_rspec *rspec)
 
 \parhead{Distributed Shared and Cloaked Memory}
 %
-In the case of multi-threaded 
-What happens in a multi-threaded (or multi-process/shared memory), two-party
-example.  
+%% why codomains need DSM
+For multi-threaded and multi-process applications, we must consider how the
+system maintains consistency of memory layout and coherency of shared memory
+among threads operating concurrently on multiple codomains.
 %
-The core issue is that a thread on \texttt{domain\_priv} might be making changes to
-the address space (cloaked or non-cloaked), and these changes must be
-consistent with the threads on \texttt{domain\_pub}.
-%
-Similarly, threads on both domains may be interacting over shared memory.
-%
-This necessitates some form of distributed shared memory.
+This problem generaally necessitates some form of distributed shared memory.
 
 
+%% DSM definition and how DSM fits into codomain design
+% TODO: cite for DSM protocol papers
 \emph{Distributed shared memory} (DSM) provides distributed processes with a
-shared addres space accessible through the conventional memory access protocols
-(in constrast to message passing).
+shared address space accessible through the conventional memory access protocols
+(in contrast to message passing).
 %
-There are many design points with regard to data granularity, syncrhonization,
-and consistencity model when desigin a DSM protocol
+DSM protocols differ with regard to data granularity, synchronization,
+and consistency models.
 %
-A common paradigm is the use of  write-invalidations: for each domain to make
-shared pages write-protected; when a domain tries to write to such a page, a
-protection faults occurs.
+A common paradigm is the use of  write-invalidations: each domain
+write-protects shared pages; when a domain tries to write to such a page, a
+protection fault occurs.
 %
-In my case, the domain's coprocess would notify the other doamins that that
-page is locked for writing, and, then make hte page writeable to the process.
+In the case of codomains, the coprocess would notify peer domains that the
+page is locked for writing, and, then make the page writeable to its process.
 
 
-In addition to normal DSM behavior, the coprocess's DMS implementation must
+%% codomain-specific needs/concerns wrt to DSM
+In addition to normal DSM behavior, the coprocess's DSM implementation must
 also handle cloaked pages.
 %
 When a domain accesses a cloaked page, the result is a fault to the process's
@@ -343,8 +341,8 @@ In the latter case, the coprocess handles the page fault by moving execution to
 the domain of the page owner, as if the application implicitly called
 \texttt{co\_switch}.
 %
-The application dictates fault semantics via \texttt{rspec}
-when attaching to the codomain.
+The application dictates fault semantics via \texttt{rspec} when attaching to
+the codomain.
 
 
 \parhead{Checkpoint/Restore}
