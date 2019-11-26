@@ -3,7 +3,7 @@
 
 \subsection{Applications}
 
-We focus on two use cases that involve multiple parties cooperatively running
+I focus on two use cases that involve multiple parties cooperatively running
 an application where the input of at least one party is confidential:
 (1) outsourcing TLS-based applications to a third-party, and (2)
 analyzing the private data of multiple parties.
@@ -11,11 +11,11 @@ analyzing the private data of multiple parties.
 
 \parhead{Outsourcing TLS applications}
 %
-We consider a company using a third-party, such as a cloud host or cloud
+I consider a company using a third-party, such as a cloud host or cloud
 service, to operate an application server.
 %
 A common case is a company using a content delivery network (CDN) to
-host their web content, and optionally manager their DNS and mail servers.
+host their web content, and optionally manage their DNS and mail servers.
 %
 Virtually all of the most popular websites (and a very long tail
 of unpopular websites) use one or more CDNs to help reliably host
@@ -24,12 +24,13 @@ their content~\cite{key-sharing}.
 Historically, CDNs have been thought of as a massive web
 cache~\cite{cdn-on-demand}, but today’s CDNs play a critical role in achieving
 the performance and security that the web relies on~\cite{securing-cdns}.
-% TODO: additiona sentence or phase
+% TODO: additional sentence or phase
 
 
-As a CDN requires the company's private TLS key in order to server content over
-HTTPS, the status quo is for the company to share or otherwise entrust
-the CDN with the application's private keys.
+
+As a CDN requires the company's private TLS to key serve content over HTTPS,
+the \emph{status quo} is for the company to share or otherwise entrust the CDN
+with the application's private keys.
 %
 Indeed, CDNs have amassed the vast majority of private keys on the
 web~\cite{key-sharing,when-https-meets-cdn}.
@@ -39,19 +40,16 @@ writ large, as the CDNs  can arbitrarily impersonate any of their customers.
 
 
 \parhead{Collaborative Data Processing}
-% make this into three or four paragraphs.
-There is a generally agreed-upon computation to be performed, and security,
-performance, or functionality considerations prevent the entire
-computation from being executed on a single host.
 %
-In this setup,  the aggregate dataset consists of the confidential, local,
-datasets of multiple parties.
+I assume a multi-party setting, where the parties agree on an analysis to be
+performed, and the aggregate input for the analysis consists of the
+confidential, local, datasets of each party.
 % 
 The parties themselves might be mutually distrustful, or may simply be
 prevented by law from sharing their data.
 %
-An analyst wants to process the datasets to determine some non-confidential
-result.
+The purpose of the analysis is to process the datasets to determine some
+non-confidential result.
 %
 With federated databases, the result may be the cardinality of an intersection
 across the datasets.
@@ -71,7 +69,7 @@ At a high-level, our goal is to make hetergeneous trust a concern
 of the application's run-time execution environment, rather than a concern of
 the application developer.
 %
-We distill our overarching goal down to three specifics:
+I distill our overarching goal down to three specifics:
 
 \begin{enumerate}
 \item \textbf{Preserve confidentiality of private data:} The execution
@@ -88,7 +86,7 @@ configuration.
 \end{enumerate}
 
 % broader impact
-If successful, we will not only improve the security and privacy of the
+If successful, I will not only improve the security and privacy of the
 involved parties, but also enable more flexible application deployment options,
 as well as support the development of new applictaions that leverage the
 collective knowledge of private data sets while respecting the privacy of the
@@ -96,7 +94,7 @@ individuals represented in the data.
 
 \subsection{Threat Model}
 
-When we speak of trust, colloquially we mean ``expect". 
+When I speak of trust, colloquially I  mean ``expect". 
 %
 In this setting, trust is an expectation that a party or application operates in
 its stated purpose, and, in particular, does not purposefully leak private
@@ -105,17 +103,17 @@ data.
 The goal of an adversary is to leak the private data of another party involved
 in the computation.
 %
-We assume that a party trusts their software, and transitively, any software
+I assume that a party trusts their software, and transitively, any software
 written by a trusted party.
 %
-We assume that the parties trust the application; guaranteeing that an
+I assume that the parties trust the application; guaranteeing that an
 \emph{untrusted}, arbitrary, application does not leak sensitive data is
 difficult, as such guarantees would entail restricting the application.
 
 
-We allow ourselves to assume several threat models.
+I allow myself to assume several threat models.
 %
-The weakest threat model we assume is honest but curious: each party faithfully
+The weakest threat model I assume is honest but curious: each party faithfully
 executes the program, but may analyze their portion of the execution to try to
 recover the private data of other principals.
 %
@@ -130,13 +128,13 @@ In this model, parties must validate the execution state against expected
 conditions during inter-domain transactions.
 
 
-There are two additional assumptions which we sometimes consider that
+There are two additional assumptions which I sometimes consider that
 influence system design.
 %
 The first is whether the application if bug-free, or whether is may, due to
 programmer error, inadvertently leak data.
 %
-If we allow buggy applications, then the design must not only provide isolated
+If I allow buggy applications, then the design must not only provide isolated
 execution, but also a sandbox for information flow.
 %
 The second is whether the application is globally public, or whether some
@@ -148,4 +146,4 @@ the CDN's web server may be proprietary.
 In short, must the system handle private code in addition to private data.
 
 
-Typical of other work in this area, we consider side-channels out of scope.
+Typical of other work in this area, I consider side-channels out of scope.

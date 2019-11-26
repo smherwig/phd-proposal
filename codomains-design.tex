@@ -1,15 +1,15 @@
 \section{Codomains Design}
 \label{sec:codomains-design}
 
-Our goal in this section is to explore the concept of codomains to arrive at an
+My goal in this section is to explore the concept of codomains to arrive at an
 application programming interface (API) for developing programs for such an
 execution model.
 %
-The core features we need are pinning data to a domain and switching
-(migrating) between domains, while the core challenges we face are providing
+The core features I need are pinning data to a domain and switching
+(migrating) between domains, while the core challenges I face are providing
 resource consistency and mechanism transparency.
 %
-We begin by introducing the coprocess abstraction, and then describe how we
+I begin by introducing the coprocess abstraction, and then describe how we
 implement codomains on top of coprocesses.
 
 
@@ -19,7 +19,7 @@ implement codomains on top of coprocesses.
 A \emph{coprocess} is a process to which a client process yields its
 execution.
 %
-Our interest with coprocesses is handling, in userspace, services requisite to
+My interest with coprocesses is handling, in userspace, services requisite to
 codomains: distributed shared memory, distributed fileystems, and the
 checkpointing and restoring of the client process, while further enabling both
 explicit and implicit yields to these services.
@@ -38,15 +38,15 @@ concept through system calls like \texttt{ptrace} and
 and through runtime loading techniques such as \texttt{LD\_PRELOAD}, which
 enable shims for proxying a process's library calls.
 %
-Part of our work is in exploring whether these existing facilities are
-sufficient for our flavor of coprocesses, or whether we must develop additional
+Part of my work is in exploring whether these existing facilities are
+sufficient for my flavor of coprocesses, or whether I must develop additional
 system calls for that purpose.
 
 
 \parhead{Coprocess API}
 %% Becoming a coprocess; attaching to
 %
-In Listing~\ref{lst:coproc-api}, we present the coprocess API\@.
+In Listing~\ref{lst:coproc-api}, I present the coprocess API\@.
 %
 The API design presents the coprocess as an ambient service to the process
 (similar to the kernel), abstracting away any details of IPC between the
@@ -127,7 +127,7 @@ which may request the page from the coprocess on A.
 
 \subsection{Codomains}
 
-We first introduce codomains programmatically with a two-party example in
+I first introduce codomains programmatically with a two-party example in
 Listing~\ref{lst:isolating-key} that isolates private key operations to a
 single domain, \texttt{domain\_priv}; all other parts of the application
 execute in the initial domain, \texttt{domain\_pub}.
@@ -207,10 +207,10 @@ simply ``wraps" their invocation.
 
 \parhead{Codomain API}
 %
-In Listing~\ref{lst:codomain-api}, we present the codomain API\@.
+In Listing~\ref{lst:codomain-api}, I present the codomain API\@.
 %
-Since we covered \texttt{co\_attach} and \texttt{co\_switch} in our prior
-description of Listing~\ref{lst:isolating-key}, we will focus here on describing
+Since I covered \texttt{co\_attach} and \texttt{co\_switch} in my prior
+description of Listing~\ref{lst:isolating-key}, I will focus here on describing
 the \texttt{co\_rspec} structure, as well as its mutators and accessors.
 %
 \texttt{co\_rspec} describes the resources that the calling, owner, codomain
@@ -326,7 +326,7 @@ A common paradigm is the use of  write-invalidations: for each domain to make
 shared pages write-protected; when a domain tries to write to such a page, a
 protection faults occurs.
 %
-In our case, the domain's coprocess would notify the other doamins that that
+In my case, the domain's coprocess would notify the other doamins that that
 page is locked for writing, and, then make hte page writeable to the process.
 
 
@@ -369,7 +369,7 @@ to dump any remaining information.
 
 
 There are several issue with composing these existing C/R systems, and CRIU in
-particular, with codomains, which reflect a mismatch in their use-cases, design
+particular, with codomains, which reflect a mismatch in their use cases, design
 decisions, and assumptions.
 %
 The major points of incongruity are (1) the coarse-grained C/R of a process vs.
@@ -379,7 +379,7 @@ the fine-grained C/R of a thread; (2) infrequent vs. frequent C/R operations
 of cloaked data and resources; and (4) the use of C/R to move a whole system,
 rather than using C/R to distribute a single system.
 %
-We merely bring up these issues to note that the codomain design does not
+I merely bring up these issues to note that the codomain design does not
 necessarily entail an implementation that bundles existing functionality, and
 that an implementation might instead add kernel functionality such that the
 coprocess can pull process state from the process descriptors (as returned by
@@ -400,9 +400,9 @@ parallel execution; in a distributed setting, a framework such as MPI
 may be used to develop a monolithic program that then executes a parallel
 computation as a distributed system.
 %
-We ask whether codomains compose with pthreads to achieve a distributed,
+I ask whether codomains compose with pthreads to achieve a distributed,
 parallel programming model similar to MPI.  \footnote{A related question is
-whether codomains can augment MPI; we leave this as interesting future work.
+whether codomains can augment MPI; I leave this as interesting future work.
 }
 
 
@@ -422,7 +422,7 @@ particular domain, such as to an enclave domain that then securely aggregates
 the return values of all the codomains.
 
 
-We sketch a design for how this might work in Listing~\ref{lst:lwc-parallel}.
+I sketch a design for how this might work in Listing~\ref{lst:lwc-parallel}.
 %
 The design relies on lightweight-contexts~\cite{lwcs}, which is an
 OS-abstraction that allows a process to have multiple contexts (a collection of
@@ -529,20 +529,20 @@ involved wrapping functions that access private data with calls to
 Consider the case where a party's private data cannot be encapsulated in a
 functional interface.
 %
-Our approach is to run the process under a \emph{dynamic binary
+My approach is to run the process under a \emph{dynamic binary
 instrumentation} (DBI) framework.
 %
 DBI frameworks consist of an emulator that instruments and dispatches the
 application's code, allowing the emulator to regain control at the end of each
 basic block.
 %
-We provide instrumentation code that tracks the propagation of the sensitive
+I provide instrumentation code that tracks the propagation of the sensitive
 data over the course of the computation; as sensitive data taints other data,
 the instrumented instructions invoke \texttt{co\_pinmem} on the associated
 data's pages.
 
 
-With this  method, we still assume that sensitive data is programmatically
+With this  method, I still assume that sensitive data is programmatically
 introduced (as through \texttt{struct co\_rspec}), and that a coprocess
 implicitly invokes \texttt{co\_switch} when a domain faults accessing cloaked
 data.
@@ -608,7 +608,7 @@ when it detects such events.
 
 \parhead{Private Code}
 %
-In our design of codomains, we focus on cloaking sensitive data, but
+In my design of codomains, I focus on cloaking sensitive data, but
 proprieatary software also necessitates cloacking sensitive code.
 %
 Naively, this scenario reduces to pinning private code pages to

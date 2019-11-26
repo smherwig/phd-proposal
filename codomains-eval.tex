@@ -6,16 +6,16 @@
 
 \parhead{Webserver}
 %
-We evalute the request throughput and latency of a webserver, such as NGINX,
+I evalute the request throughput and latency of a webserver, such as NGINX,
 running in a standard Linux environment, and compare against a configuration of
 the webserver running with codomains, where a separate domain isolates each
 website's private TLS key.
 %
-We also compare the codomain version of the webserver to 
+I also compare the codomain version of the webserver to 
 static partitioning schemes~\cite{eleos,glamdring,privtrans} that achieve
 the same isolation.
 %
-When comparing to static partitioning schemes, we are interested not only in the
+When comparing to static partitioning schemes, I am interested not only in the
 performance differences, but also how the the boundaries determined by each
 scheme differ.
 %
@@ -35,15 +35,15 @@ how host-codomains compare to enclave-codomains.
 
 \subsection{Micro-benchmarks}
 
-With the micro-benchmarks, we are interested in isolating the cost of each
+With the micro-benchmarks, I am interested in isolating the cost of each
 facet of codomains---thread migration, taint tracking, the DSM protocol.
 %
-For such purposes, we envision developing a small set of multi-party programs
+For such purposes, I envision developing a small set of multi-party programs
 drawn from the literature, such as:
 
 \begin{widelist}
 \item \textbf{Timestamp signing server:} Returns a signature over the current
-time to each client; we assume the server's key must be isolated from the
+time to each client; I assume the server's key must be isolated from the
 server's host.
 %
 \item \textbf{Richest protocol:} Computes the richest principal.
@@ -57,7 +57,7 @@ participating principals, as well as the second-highest bid, which is revealed
 to everyone; only the auction holder learns the winning bidder.
 \end{widelist}
 
-In the case of the timestamp signing server, we are interested in how a packet
+In the case of the timestamp signing server, I am interested in how a packet
 capture of the migration compares to that of an alternative RPC-based
 implementation, such as keyless SSL\@?
 %
@@ -68,7 +68,7 @@ goodput to throughput?
 Moreover, is each migration identical?
 
 
-Closely related to the previous question, we seek to measure the latency of
+Closely related to the previous question, I seek to measure the latency of
 migration and the related operations.
 %
 Direct overhead costs include network latency, while indirect costs include the
@@ -78,9 +78,9 @@ the migration to return.
 
 \subsection{Correctness}
 
-We want to assert correctness of data cloaking and resource coherence.
+I want to assert correctness of data cloaking and resource coherence.
 %
-For asserting correctness of data cloaking, we envision developing an external
+For asserting correctness of data cloaking, I envision developing an external
 program that dumps each process's memory and scans for a given byte string,
 and running this program periodically and in tandem with the micro-benchmarks.
 %
@@ -91,5 +91,5 @@ analyzes the state for consistency invariants.
 Such a manager may also be useful in deadlock detection.
 %
 Finally, in order to test that codomains properly validate execution state when
-restoring a thread, we imagine a set of fault-injection tests whereby one
+restoring a thread, I imagine a set of fault-injection tests whereby one
 codomain attempts to switch to another at an invalid state.

@@ -1,9 +1,8 @@
-\section{Preliminary Work: Conclaves}
+\section{Conclaves Summary}
 \label{sec:conclaves-summary}
-%
 % XXX: keep to ~4 pages
 
-At a high level, our approach is to deploy applications in enclaves.
+At a high level, my approach is to deploy applications in enclaves.
 %
 However, doing so in a manner that permits multi-tenancy and support
 for legacy applications is challenging.
@@ -14,13 +13,13 @@ OS kernel services within an enclave, and either handle the system calls
 themselves or, when necessary (e.g., to send a network packet), hand
 them off to the untrusted OS.
 %
-Conversely, we aim to be able to support dynamic scaling up and down of
+Conversely, I aim to be able to support dynamic scaling up and down of
 web servers, tenant configurations, and security postures.
 
-To address these challenges, we introduce a new architectural primitive that we
+To address these challenges, I introduce a new architectural primitive that we
 call a \emph{conclave}: in essence a container of enclaves.
 %
-As we will show, conclaves permit flexible deployment configurations and
+As I will show, conclaves permit flexible deployment configurations and
 achieve security in multi-tenant settings.
 
 
@@ -92,13 +91,13 @@ file-backed).
 Conclaves extend upon this prior design by leaning into the distributed
 system nature of it.
 %
-We implement kernel services as \emph{kernel servers}; applications
+I implement kernel services as \emph{kernel servers}; applications
 act as clients, connecting to and issuing requests to kernel
 services---via pipes or TLS network connections.
 %
 The kernel servers also run atop the libOS.
 %
-Our design is effectively that of a multi-server microkernel system,
+My design is effectively that of a multi-server microkernel system,
 similar to GNU Hurd or Mach-US, in which shared resource abstractions
 are implemented as a set of enclaved daemons shared by all processes in
 the system.
@@ -108,14 +107,14 @@ the system.
 \subsubsection{Conclave Kernel Servers}
 
 Using the NGINX web server as a guide (as software representative of a
-CDN edge server), we identified five key shared resources: files,
+CDN edge server), I identified five key shared resources: files,
 shared memory, locks/semaphores, cryptographic keys, and time.  
 %
-For flexibility in deployment configurations, we implement four servers
+For flexibility in deployment configurations, I implement four servers
 to manage these resources\footnote{Due to the common pattern of using
 locks with shared memory, the memserver manages both.}:
 %
-We implement the fsserver, memserver, and keyserver as single-threaded,
+I implement the fsserver, memserver, and keyserver as single-threaded,
 single-process, event-driven servers that communicate with the application's
 Graphene instances over a TLS-encrypted stream channel. 
 %
@@ -126,13 +125,13 @@ Each server is independent.
 
 \parhead{fsserver}
 %
-For our file server, \emph{nextfs}, we extend lwext4's~\cite{lwext4} userspace
+For my file server, \emph{nextfs}, I extend lwext4's~\cite{lwext4} userspace
 implementation of an ext2 filesystem into a networked server.
 %
 nextfs uses an untrusted host file as the backing store, similar to a block
 device.
 %
-We develop three variants of this device to accommodate different security
+I develop three variants of this device to accommodate different security
 postures, and a fourth for comparison purposes.
 
 \vspace*{-0.5\baselineskip}
@@ -141,7 +140,7 @@ postures, and a fourth for comparison purposes.
 \item 
 %
 \textbf{bd-std} stores data blocks in plaintext, without integrity
-guarantees. This serves as a baseline in our evaluation.
+guarantees. This serves as a baseline in my evaluation.
 
 
 \item
@@ -149,7 +148,7 @@ guarantees. This serves as a baseline in our evaluation.
 \textbf{bd-crypt} encrypts each block using AES-256 in XTS mode, the de
 	facto standard for full-disk encryption~\cite{xts-ieee,xts-nist}.
 %
-We base each block's initialization vector on the block's ID.
+I base each block's initialization vector on the block's ID.
 %
 This, too, lacks integrity guarantees, and is thus suitable only for an
 	honest-but-curious attacker.
@@ -182,7 +181,7 @@ As an optimization for reducing reads and writes to the Merkle tree
 
 \parhead{memserver}
 %
-We implement shared memory as filesystems that implement a
+I implement shared memory as filesystems that implement a
 reduced set of the filesystem API\footnote{Graphene does not have a
 unified filesystem and memory subsystem, and
 thus \texttt{munmap} is not currently available as a filesystem operation.
@@ -190,7 +189,7 @@ thus \texttt{munmap} is not currently available as a filesystem operation.
 \texttt{open}, \texttt{close}, \texttt{mmap}, and \texttt{advlock}
 (\texttt{advlock} handles both advisory locking and unlocking).
 %
-In our shared memory filesystems, files are called \emph{memory files}, and
+In my shared memory filesystems, files are called \emph{memory files}, and
 either represent a pure, content-less lock, or a lock with an associated
 shared memory segment.
 % 
@@ -199,7 +198,7 @@ destroyed when no process holds a descriptor to the file and no process has the
 associated memory segment mapped.
 
 
-We implement three versions of shared memory.
+I implement three versions of shared memory.
 %
 Each stores a canonical replica of the shared memory at a known
 location (either a particular server or file).
@@ -278,8 +277,6 @@ and IV.
 \end{widelist}
 
 
-
-
 \parhead{keyserver}
 %
 The keyserver is an SGX enclave rendition of a hardware-security module
@@ -293,7 +290,7 @@ application's, thereby guarding against critical memory disclosure
 vulnerabilities, such as Heartbleed~\cite{heartbleed-cve}.
 
 
-We implement the keyserver as two components: the keyserver proper, and an
+I implement the keyserver as two components: the keyserver proper, and an
 OpenSSL engine (``engine'' in Figure~\ref{fig:design}) that the application
 loads as a shared library; the engine proxies private key operations to the
 keyserver.
@@ -302,16 +299,16 @@ Unlike the fsserver and memserver clients, the key client operates at
 the application layer, outside of Graphene.
 
 
-OpenSSL's engine API requires the caller (in our case, NGINX) to provide an
+OpenSSL's engine API requires the caller (in my case, NGINX) to provide an
 \texttt{RSA} object, which contains the secret key.
 %
-To avoid having to expose the key, we modified OpenSSL to populate
+To avoid having to expose the key, I modified OpenSSL to populate
 \texttt{RSA} objects with dummy keys that instead serve as identifiers
 that the keyserver uses to look up the real keys it stores securely.
 
 
 To reduce the number of connections and avoid a dependency on the memserver for
-lock files, our engine maintains the property that all keys for the same
+lock files, my engine maintains the property that all keys for the same
 keyserver, within the same process, share a single connection.
 %
 This requires that the engine detect forking by the application, which we
@@ -321,7 +318,7 @@ achieve by also associating process IDs with the \texttt{RSA} objects.
 \parhead{timeserver}
 %
 Given that the components of a conclave must authenticate one another,
-we need trusted time to guard against attacks that 
+I need trusted time to guard against attacks that 
 % manipulate the conclave's sense of time to
 trick the conclave into accepting expired certificates.
 %% (and therefore possibly
@@ -350,7 +347,7 @@ but not all processors support it~\cite{ayeks-sgx-hardware}.
 %% server.
 
 
-Instead of relying on the CSME, we simply design a remote, signed
+Instead of relying on the CSME, I simply design a remote, signed
 timestamping server.
 %
 The timestamping server runs outside of an enclave, on a remote trusted
@@ -360,7 +357,7 @@ The timeserver's purpose is not to provide fine grained precision to
 the conclaved processes, but rather to serve as an integrity check of
 the time those processes receive from the untrusted host.
 
-We modify the Graphene system call handlers for \texttt{getttimeofday},
+I modify the Graphene system call handlers for \texttt{getttimeofday},
 \texttt{time}, and \texttt{clock\_gettime} to optionally proxy application
 calls to a remote, trusted, timestamp signing server.
 %
@@ -390,12 +387,12 @@ consisting of the current time concatenated with this nonce.
 %% greater than the last time value retrieved.
 
 
-Our timeserver approach resembles Google's roughtime protocol~\cite{roughtime};
+My timeserver approach resembles Google's roughtime protocol~\cite{roughtime};
 future work would fully port the roughtime protocol to Graphene to reduce the
 need for a trusted timeserver by instead tolerating some fraction of
 misbehaving servers.
 %
-Note, however, that, in the SGX setting, both our approach and roughtime are best
+Note, however, that, in the SGX setting, both my approach and roughtime are best
 efforts; an untrusted host that identifies the traffic between the Graphene
 client and timeserver could, for instance, ``slow down" time by delaying the
 responses.
@@ -419,7 +416,7 @@ and so on.
 
 %% Before we address provisioning secrets to the running conclave, we describe
 
-We first address how the conclave, viewed as a distributed system,
+I first address how the conclave, viewed as a distributed system,
 establishes the trust of each member node, whether kernel server or
 application process.
 %
@@ -497,7 +494,7 @@ key, which includes the aforementioned extensions for the quote and IAS
 verification.
 
 
-In our conclave setup, the attestation is a local attestation, and validation of
+In my conclave setup, the attestation is a local attestation, and validation of
 the quote is based on a list of valid attestation values in the manifest.
 %
 Specifically, the manifest specifies a graph of which processes can establish
@@ -510,13 +507,13 @@ Figure~\ref{fig:macrobench-single-tenant-lat-throughput} shows
 request latency and throughput results for the four configurations.
 %
 Due to the RSA private key operation in the TLS handshake, Linux becomes
-CPU-bound at four workers (our test machine has four physical cores) and
+CPU-bound at four workers (my test machine has four physical cores) and
 saturates the Ethernet link for tests with a 100~KiB payload and more than one
 NGINX worker.
 %
 Linux-keyless shows that the concurrency of the keyserver levels
 off with two workers, and thus that the two NGINX worker configuration of
-Linux-keyless is an upper-bound on the performance we can hope to achieve
+Linux-keyless is an upper-bound on the performance I can hope to achieve
 with the other conclave configurations.
 %
 %In addition, whereas Graphene-crypt shows increased performance as the number
@@ -534,7 +531,7 @@ all conclave configurations.
 	%
 	\caption{Throughput and latency for single tenant configurations.
     The legend indicates the number of NGINX worker processes.
-    We include the standard deviation of the latencies as error bars.}
+    I include the standard deviation of the latencies as error bars.}
 	%
 	\vspace*{-4pt}
     \label{fig:macrobench-single-tenant-lat-throughput}
