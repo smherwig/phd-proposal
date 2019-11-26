@@ -595,35 +595,39 @@ In some cases, this may be indicative of a programming error, as by failing to
 partition the application so that the computation occurs in a secure enclave,
 if available.
 %
-A plausible, inadvertent, deadlock scenario is a server that supports multiple
-tenants and uses a global data structure to manage the (pinned) keys across all
-tenants.
+On the other hand, a plausible, inadvertent, deadlock scenario is a server that
+supports multiple tenants and uses a global data structure to manage the
+(pinned) keys across all tenants.
 %
 In such cases, the application may need to be patched to correct the offending
 memory layout.
 %
 In the general case, the problem is one of secure multi-party computation, and
-an interesting area of future work is for the system to emit garbled circuits
-when it detects such events.
+an interesting area of future work is for the system to just-in-time compile
+and emit garbled circuits when it detects such events.
 
 
 \parhead{Private Code}
 %
-In my design of codomains, I focus on cloaking sensitive data, but
-proprieatary software also necessitates cloacking sensitive code.
+In my codomain design, I focus on cloaking sensitive data, but proprietary
+software also necessitates cloaking sensitive code.
 %
-Naively, this scenario reduces to pinning private code pages to
-the owning domain, and restricting domain switches to only
-non-private points in the application's execution.
+Na\"{i}vely, this scenario reduces to pinning private code pages to the owning
+domain, and restricting domain switches to non-private points in the
+application's execution.
 %
 However, this restriction alone is insufficient, as data written by private
 code pages should, likewise, be marked private, as sharing such data pages
 could reveal aspects of the private code.
 %
-This scenario requires an alternative form of taint-analysis that additionally
-applies taint to instructions and propagates taint from instructions to
-operands, rather than solely propagating taint from one memory operand to
-another.
+For privacy with respect to codomains, this result requires a tight coupling
+between the proprietary code and its memory allocator.
+%
+If the application is not coducive to achieving this coupling programmatically,
+then the solution may require an alternative form of taint-analysis that
+additionally applies taint to instructions, and propagates taint from
+instructions to operands, rather than solely propagating taint from one memory
+operand to another.
 
 
 \parhead{False sharing}
@@ -635,7 +639,10 @@ If the application allocates multiple data structures on the same page, then
 this constraint can lead to \emph{false sharing}, wherein distinct private data
 structures appear shared due to colocation on the same page.
 %
-A similar phenomenon occurs when applying taint tags at page granularity.
+Operationally, false sharing leads to thrashing.
+%
+A similar phenomenon occurs when applying taint tags or otherwise pinning
+memory at page granularity.
 
 
 \parhead{Inadvertent data leakage}
@@ -644,7 +651,7 @@ Although codomains present an interface for partitioning an application across
 trust boundaries, partitionioning alone does not prevent private data leakage.
 %
 For instance, local results and parameters from a federated learning
-application, may reveal information about the private data samples.
+application may reveal information about the private data samples.
 %
 Thus, orthogonal to codomains, the application may additionally require
 methods for achieving differential privacy, such as by adding a carefully
