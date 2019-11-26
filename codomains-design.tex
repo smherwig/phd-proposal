@@ -59,6 +59,10 @@ is a socket-like descriptor for communicating with future client processes.
 A client process attaches to a coprocess by calling \texttt{coproc\_set}, passing as an
 argument the path representing the coprocess.
 %
+Analogous to how calling \texttt{accept} on a listening socket returns an
+active client socket, calling \texttt{accept} on the coprocess's descriptor
+returns a \emph{process decriptor} for an attaching process.
+%
 A process may have at most one coprocess, and a coprocess may service multiple
 processes.
 %
@@ -307,7 +311,7 @@ For multi-threaded and multi-process applications, we must consider how the
 system maintains consistency of memory layout and coherency of shared memory
 among threads operating concurrently on multiple codomains.
 %
-This problem generaally necessitates some form of distributed shared memory.
+This problem generally necessitates some form of distributed shared memory.
 
 
 %% DSM definition and how DSM fits into codomain design
@@ -324,7 +328,7 @@ write-protects shared pages; when a domain tries to write to such a page, a
 protection fault occurs.
 %
 In the case of codomains, the coprocess would notify peer domains that the
-page is locked for writing, and, then make the page writeable to its process.
+page is locked for writing, and then make the page writeable to its process.
 
 
 %% codomain-specific needs/concerns wrt to DSM
@@ -341,8 +345,8 @@ In the latter case, the coprocess handles the page fault by moving execution to
 the domain of the page owner, as if the application implicitly called
 \texttt{co\_switch}.
 %
-The application dictates fault semantics via \texttt{rspec} when attaching to
-the codomain.
+The application dictates fault semantics via the \texttt{rspec} parameter when
+attaching to the codomain.
 
 
 \parhead{Checkpoint/Restore}
@@ -366,7 +370,7 @@ system calls, and \texttt{ptrace}, the latter of which injects parasite code
 to dump any remaining information.
 
 
-There are several issue with composing these existing C/R systems, and CRIU in
+There are several issues with composing these existing C/R systems, and CRIU in
 particular, with codomains, which reflect a mismatch in their use cases, design
 decisions, and assumptions.
 %
@@ -380,9 +384,7 @@ rather than using C/R to distribute a single system.
 I merely bring up these issues to note that the codomain design does not
 necessarily entail an implementation that bundles existing functionality, and
 that an implementation might instead add kernel functionality such that the
-coprocess can pull process state from the process descriptors (as returned by
-\texttt{coproc\_create}).
-
+coprocess can retrived process state from the process descriptors.
 
 
 \parhead{Parallel Execution}
