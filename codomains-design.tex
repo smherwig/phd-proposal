@@ -384,7 +384,7 @@ rather than using C/R to distribute a single system.
 I merely bring up these issues to note that the codomain design does not
 necessarily entail an implementation that bundles existing functionality, and
 that an implementation might instead add kernel functionality such that the
-coprocess can retrived process state from the process descriptors.
+coprocess can retrived thread state from a process descriptor.
 
 
 \parhead{Parallel Execution}
@@ -485,8 +485,8 @@ main() {
 \label{sec:enclaves-as-codomains}
 
 There are multiple challenges with migrating execution into an enclave; we
-distill these challenges down to two problems: maintaing memory coherence with
-peer codomains, and supporting dynamic attestation.
+distill these challenges down to two problems: maintaining memory coherence
+with peer codomains, and supporting dynamic attestation.
 
 
 Memory coherence between a non-enclave codomain and enclave-codomain is
@@ -516,7 +516,7 @@ program that dynamically loads the relevant portions of the application, but
 given that the executable pages could comprise only a small part of the
 application, and that the initial state of the data pages is generally unknown,
 it's not immediately clear what meaningful attestation the enclave could
-provide a remote party.
+provide to a remote party.
 
 
 \subsection{Data-Directed Switching}
@@ -534,12 +534,13 @@ instrumentation} (DBI) framework.
 %
 DBI frameworks consist of an emulator that instruments and dispatches the
 application's code, allowing the emulator to regain control at the end of each
-basic block.
+basic block\footnote{A \emph{basic block} is roughly a sequence of instructions
+that terminates in a jump.}.
 %
 I provide instrumentation code that tracks the propagation of the sensitive
 data over the course of the computation; as sensitive data taints other data,
 the instrumented instructions invoke \texttt{co\_pinmem} on the associated
-data's pages.
+data's page.
 
 
 With this  method, I still assume that sensitive data is programmatically
@@ -560,20 +561,20 @@ non-sensitive; and yet another could wait for the next programmatic instance of
 \texttt{co\_switch}.
 
 
-Composing codomains with a taint-tracking DBI framework is also potentially
+Composing codomains with a taint-tracking DBI framework is potentially
 beneficial in two other respects: (1) as a ``safety belt" for programs
-that may inadvertentally leak sensitive data, and (2) as method for
+that may inadvertently leak sensitive data, and (2) as a method for
 partitioning black-box, trusted applications, that require a party's sensitive
 input, such that the sensitive input does not leak to other parties.
 %
-With black-box partitioning, tainted data may have to declassified for liveness
-concerns; for instanace, taint-tracking instrumention would mark a signature as
-tainted, even though it is not semantically sensitive.
+With black-box partitioning, the DBI framework may have to declassify tainted
+data for liveness concerns; for instanace, taint-tracking instrumention would
+mark a signature as tainted, even though it is not semantically sensitive.
 %
 Declassificaiton requires hooking at least the epilogues of such functions.
 %
 In essence, this results in \emph{half-wrapping}, whereby a domain could be
-migrated to at any point based on faults, but has well defined exit points and
+migrated to at any point based on faults, but has well-defined exit points and
 exit conditions.
 
 
