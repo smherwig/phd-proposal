@@ -2,33 +2,33 @@
 \label{sec:intro}
 
 %% big picture
-Applications often assumes that a single party controls the application, its
+Applications often assume that a single party controls the application, its
 data, and its execution environment.
 %
 This assumption is valid when a party develops the software, owns the data, 
 and administers the deployment infrastructure.
 %
-However, when these applications must use a heterogeneous dataset,
-such as data form multiple parties, or run under a different deployment, such
-as on a third-party's cloud, the application's original assumption of a
-monolithic trust setting is no longer valid.
+However, when these applications must run under a different deployment, such as
+on a third-party's cloud, or use a heterogenenous dataset, such as data from
+multiple parties, the application's original assumption of a monotlithic trust
+setting is no longer valid.
 
 
 %% statement of problem (why big picture murky)
-Unfortunately, the operational status quo is either to ignore the issue, or
-restrict the scope of such applications.  
+Unfortunately, the operational \emph{status quo} is either to ignore the issue,
+or restrict the scope of such applications.  
 %
-For instance organizations outsource their applications to the cloud for
-cost-savings or deployment flexibility, even though this decision exposes to
-the cloud operators private data about the organization and its patrons.
-%
-Considerable data is confined to so-called data-islands.
+As a result, organizations outsource their applications to the cloud, despite
+exposing private data about itself and its patrons to the cloud operator, while
+data for healthcare providers and financial services remains confined to data
+islands, despite the important questions that they could answer in aggregate.
 
 
 
 %% challenges in solving it    (why does it remain murky)
 Academia and industry have devoted considerable attention to the underlying
-problems of secure remote computation and secure multi-party computation.
+problems of \emph{secure remote computation} and \emph{secure multi-party
+computation}.
 %
 A major difficulty is that conventional operating systems and
 programming languages offer limited support for developing and running software
@@ -43,10 +43,10 @@ My insight is to apply ideas from alternative operating system
 architectures that emphasize a distributed and application-specific execution
 environment.
 %
-Whereas these architectures are motivated by stability, performance, or
-maximizing use of idle resources, my focus instead is on using them as a means
-for constructing and enforcing isolation boundaries that reflect the principals
-and trust assumptions of the application.
+Whereas the original motivations for these architectures were stability,
+performance, or resource utilization, my focus instead is on using them as a
+means for constructing and enforcing isolation boundaries that reflect the
+application's principals and their trust assumptions.
 %
 Since the execution enviornment is transparent to the application, 
 it may be modified, partitioned, or distributed across domains of varying
@@ -60,8 +60,7 @@ application's source code.
 To that end, my thesis is:
 \begin{displayquote}
     It is possible to run legacy application binaries with confidentiality and 
-    integrity guarantees that reflect the potentially multi-party trust model
-    in which the application is deployed.
+    integrity guarantees that reflect a multi-party trust setting.
 \end{displayquote}
 
 
@@ -101,7 +100,7 @@ Although codomains present an explicit API for domain switches and data
 pinning, the design allows a monitor to implicitly and transparently call such
 functions on the application's behalf.
 %
-In its extreme, codomains allows the trust policy to be data-centric, with parties
+In its extreme, codomains allow the trust policy to be data-centric, with parties
 specifing which data must be isolated from other parties and how data may flow
 throughout the system.
 
@@ -110,21 +109,19 @@ throughout the system.
 This proposal is organized as follows: in \S\ref{sec:background}, I describe
 the problem setup, the threat model, and the system goals.
 %
-In \S\ref{sec:related}, I provide an overview of trusted execution
-environments (TEEs), and techniques for running legacy applications
-in TEEs.
+In \S\ref{sec:related}, I provide an overview of Intel SGX  and techniques for
+running legacy applications in SGX\@.
 %
-I also describe techniques for data isolation and integrity that pre-date, or
-are otherwise orthogonal to, TEEs.
-%
+I also describe prior approachs to partitioning an application for the
+purposes of separate of privileges, some of which involve separation
+into enclave and non-enclave components.
+%%
 In \S\ref{sec:conclaves-summary}, I summarize my preliminary work.
 %
-In \S\ref{sec:codomains-intro} I introduce the concept of codomains, as well as
-a related concept of the coprocess, and in \S\ref{sec:codomains-design} sketch
-their design.
+In \S\ref{sec:codomains-intro}, I introduce the concept of codomains, and in
+\S\ref{sec:codomains-design} sketch their design.
 %
-I describe a set of evaluations for codomains in \S\ref{sec:codomains-eval}.
-%
-I conclude in \S\ref{sec:conclusion}.
+I describe a set of evaluations for codomains in \S\ref{sec:codomains-eval},
+and conclude in \S\ref{sec:conclusion}.
 
 
