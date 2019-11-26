@@ -423,6 +423,13 @@ the return values of all the codomains.
 
 
 We sketch a design for how this might work in Listing~\ref{lst:lwc-parallel}.
+%
+The design relies on lightweight-contexts~\cite{lwcs}, which is an
+OS-abstraction that allows a process to have multiple contexts (a collection of
+resources that includes an address space, credentials, and file descriptor table),
+and to switch in a coroutine-like fashion between these contexts over the
+process's evolution.
+%
 
 %A simple, perhaps naive approach, would be that the private domains encrpyt the
 %output using the public key of the enclave's domain.
@@ -476,9 +483,40 @@ main() {
 
 \subsection{Enclaves as Codomains}
 \label{sec:enclaves-as-codomains}
-% TODO: it will be non-obvious to the audience how this would even work,
-% so briefly sketch the design.
 
+There are multiple challenges with migrating execution into an enclave; we
+distill these challenges down to two problems: maintaing memory coherence with
+peer codomains, and supporting dynamic attestation.
+
+
+Memory coherence between a non-enclave codomain and enclave-codomain is
+complicated due the differences in memory layout, specifically with regards to
+the heap and thread context structures.
+%
+Additionally, lazy migration and DSM protocols must address the limitation that
+all enclave memory must be commited at the time of enclave initialization, and
+that the protection attributes of these memory pages cannot be changed during
+enclave execution.
+%
+SGX2 overcomes some of these restrictions by permitting increased dynamic memory
+management within an enclave, but at the expense of greater enclave
+implementation complexity.
+%
+%Regardless...
+
+With SGX, an enclave packaging step produces a measurement of the enclave image by
+emulating the measurement tasks that the Intel hardware will perform when
+loading the enclave.
+%
+With codomains, however, it is not immediately clear what parts of the
+application constitute an enclave image.
+%
+This issue is, in part, bypassed by having the enclaved code simply be a loader
+program that dynamically loads the relevant portions of the application, but
+given that the executable pages could comprise only a small part of the
+application, and that the initial state of the data pages is generally unknown,
+it's not immediately clear what meaningful attestation the enclave could
+provide a remote party.
 
 
 \subsection{Data-Directed Switching}
