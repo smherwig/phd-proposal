@@ -18,6 +18,7 @@ My approach is to apply operating system designs and fine-grained information
 flow control to hoist, or otherwise partition, the execution environment into
 trust boundaries in a manner that is transparent to the application.
 
+
 In the first part of my proposal, I review my prior work in extending a
 library operating system that runs within an Intel SGX secure hardware
 enclave, so as to support running a broader set of trusted, legacy,
@@ -25,10 +26,7 @@ applications in untrusted environments.
 %
 In the second part, I discuss my proposed work, \emph{codomains}, an execution
 model that maintains the source-level abstraction of a monolithic program, but
-allow an application to dynamically switch execution to different
-domains---hosts and enclaves---, and pin to data to domains, via
-language-neutral mechanisms.
+allows an application to dynamically switch execution to different domains
+(hosts and enclaves) via language-neutral mechanisms.
 
 \end{abstract}
-
-
