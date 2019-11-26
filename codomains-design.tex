@@ -315,7 +315,7 @@ Similarly, threads on both domains may be interacting over shared memory.
 This necessitates some form of distributed shared memory.
 
 
-\emph{Distribute shared memory} (DSM) provides distributed processes with a
+\emph{Distributed shared memory} (DSM) provides distributed processes with a
 shared addres space accessible through the conventional memory access protocols
 (in constrast to message passing).
 %
@@ -387,31 +387,49 @@ coprocess can pull process state from the process descriptors (as returned by
 
 
 
-\parhead{Federated (Parallel)}
+\parhead{Parallel Execution}
+% A computational modelis a conceptual view of the types of operations availableto a program.
 %
-% TODO: give a code listing of a simple federated algorithm, such as private
-% set intersection, or the millionaires problem.
 %
-For federated use cases, it is useful to have some notion of parallel
-execution
+When developing a new distributed, or, specifically, federated, application
+with codomains, it is useful to have some notion of \emph{parallel
+execution}---that is, a single-instruction, multiple-data computational model.
 %
-In such cases, there's no need for DSM; each migrated thread can have it's own
-private address space and own file system.
+In a single-process, single-host setting, pthreads are the mechanism for
+parallel execution; in a distributed setting, a framework such as MPI
+may be used to develop a monolithic program that then executes a parallel
+computation as a distributed system.
 %
-In this case, each thread passes back the results to the \texttt{domain\_pub}
-as a return value, of sorts, rather than in shared memory.
+We ask whether codomains compose with pthreads to achieve a distributed,
+parallel programming model similar to MPI.  \footnote{A related question is
+whether codomains can augment MPI; we leave this as interesting future work.
+}
 
 
-In some cases, we want the reutrn vlaue to be blinded, as \texttt{domain\_pub}
-will take the return values of from all the private domains and feed them into
-an enclave for some private operation (such as private set intersection).  
+For such computations, maintaining the memory and fileystem consistency across
+codomains may not be a concern; it may be more natural for threads running in
+separate codomains to have their own private address space and file system that
+a master codomain has initialized.
 %
-A simple, perhaps naive approach, would be that the private domains encrpyt the
-output using the public key of the enclave's domain.
+When the codomain thread exits, it merely needs to return a value to some
+master codomain, rather than overlay shared pages that contain the return
+value.
 %
-This then brings up the question of how domains know of the existence of other
-domains; in particular, must ``capabilities" for other domains be passed in the
-\texttt{rspec}.
+% TODO: probably add arguments to co\_switch.
+%
+Moreover, the return value itself might need to be sealed (encrypted) to a
+particular domain, such as to an enclave domain that then securely aggregates
+the return values of all the codomains.
+
+
+We sketch a design for how this might work in Listing~\ref{lst:lwc-parallel}.
+
+%A simple, perhaps naive approach, would be that the private domains encrpyt the
+%output using the public key of the enclave's domain.
+%%
+%This then brings up the question of how domains know of the existence of other
+%domains; in particular, must ``capabilities" for other domains be passed in the
+%\texttt{rspec}.
 
 
 \begin{lstlisting}[
@@ -421,6 +439,8 @@ domains; in particular, must ``capabilities" for other domains be passed in the
     numberstyle=\tiny,
     xleftmargin=2em,
     framexleftmargin=1.5em,
+    caption={Combining codomains with light-weight contexts for parallel computation},
+    captionpos=b,
 ]
 int snapfd;
 
