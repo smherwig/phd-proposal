@@ -5,14 +5,14 @@ A cooperative domain, or \emph{codomain}, is an isolation domain
 that a thread may migrate to over the course of its evolution, such as another
 process, another host, or an SGX hardware enclave.
 %
-My focus is on designing and implementing operating system abstractions that
-enable a developer to write a monolithic program that executes over multiple
-domains, with the underlying system being responsible for moving the execution
-between domains, maintaining resource consistency across domains, and
-restricting information flow among domains.
+I explore system primitives for codomains that enable a developer to write a
+monolithic program that executes over multiple domains, with the underlying
+system being responsible for moving the execution between domains, maintaining
+resource consistency across domains, and restricting information flow among
+domains.
 %
 In contrast to prior work in program partitioning, codomains present
-a language-neutral, run-time, mechanism for switching domains, rather than
+a language-neutral, run-time mechanism for switching domains, rather than
 resorting to language-specific or compile-time techniques.
 
 
@@ -46,8 +46,7 @@ the application's evolution, and data, rather than code, may drive the boundary
 construction.
 %
 Finally, whereas conclaves take an approach of hoisting the entire application
-into enclaves; codomains only use enclaves as needed over the application's
-evolution.
+into enclaves; codomains use enclaves in an on-demand, as needed, fashion.
 
 
 % TODO: sentence or two lead-in to the rest of the sections

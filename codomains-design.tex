@@ -1,7 +1,7 @@
 \section{Codomains Design}
 \label{sec:codomains-design}
 
-My goal in this section is to explore the concept of codomains to arrive at an
+In this section, I explore the concept of codomains to arrive at an
 application programming interface (API) for developing programs for such an
 execution model.
 %
@@ -9,8 +9,19 @@ The core features I need are pinning data to a domain and switching
 (migrating) between domains, while the core challenges I face are providing
 resource consistency and mechanism transparency.
 %
-I begin by introducing the coprocess abstraction, and then describe how we
+I first introduce the coprocess abstraction, and then describe how we
 implement codomains on top of coprocesses.
+%
+I then discuss techniques for \emph{backfitting} codomains, at run-time, onto legacy
+application binaries by means of running the application on a
+taint-tracking-enhanced emulator.
+%
+Under this scheme, a user specifies a data policy that defines the domains and
+their access privileges to the various application data, and the emulator
+handles switching execution on data access based on these privileges.
+%
+I conclude with challenges that I anticipate when implementating codomains and
+applying them to applications.
 
 
 \subsection{Coprocesses}
@@ -100,7 +111,7 @@ void coproc_raise(void *args)
 \end{lstlisting}
 
 
-\parhead{Coprocess Events}
+%\parhead{Coprocess Events}
 %
 % TODO: whereas the coprocess API section describes the interface mostly
 % from the process's perspective, now describe the types of messages a
@@ -481,46 +492,8 @@ main() {
 \end{lstlisting}
 
 
-\subsection{Enclaves as Codomains}
-\label{sec:enclaves-as-codomains}
-
-There are multiple challenges with migrating execution into an enclave; we
-distill these challenges down to two problems: maintaining memory coherence
-with peer codomains, and supporting dynamic attestation.
-
-
-Memory coherence between a non-enclave codomain and enclave-codomain is
-complicated due the differences in memory layout, specifically with regards to
-the heap and thread context structures.
-%
-Additionally, lazy migration and DSM protocols must address the limitation that
-all enclave memory must be commited at the time of enclave initialization, and
-that the protection attributes of these memory pages cannot be changed during
-enclave execution.
-%
-SGX2 overcomes some of these restrictions by permitting increased dynamic memory
-management within an enclave, but at the expense of greater enclave
-implementation complexity.
-%
-%Regardless...
-
-With SGX, an enclave packaging step produces a measurement of the enclave image by
-emulating the measurement tasks that the Intel hardware will perform when
-loading the enclave.
-%
-With codomains, however, it is not immediately clear what parts of the
-application constitute an enclave image.
-%
-This issue is, in part, bypassed by having the enclaved code simply be a loader
-program that dynamically loads the relevant portions of the application, but
-given that the executable pages could comprise only a small part of the
-application, and that the initial state of the data pages is generally unknown,
-it's not immediately clear what meaningful attestation the enclave could
-provide to a remote party.
-
-
-\subsection{Data-Directed Switching}
-\label{sec:data-directed-switching}
+\subsection{Supporting Legacy Applications with Codomains}
+\label{sec:codomains-legacy-apps}
 
 In Listing~\ref{lst:isolating-key}, partitioning the application simply
 involved wrapping functions that access private data with calls to
@@ -578,12 +551,46 @@ migrated to at any point based on faults, but has well-defined exit points and
 exit conditions.
 
 
+\subsection{Enclaves as Codomains}
+\label{sec:enclaves-as-codomains}
+
+There are multiple challenges with migrating execution into an enclave; we
+distill these challenges down to two problems: maintaining memory coherence
+with peer codomains, and supporting dynamic attestation.
 
 
+Memory coherence between a non-enclave codomain and enclave-codomain is
+complicated due the differences in memory layout, specifically with regards to
+the heap and thread context structures.
+%
+Additionally, lazy migration and DSM protocols must address the limitation that
+all enclave memory must be commited at the time of enclave initialization, and
+that the protection attributes of these memory pages cannot be changed during
+enclave execution.
+%
+SGX2 overcomes some of these restrictions by permitting increased dynamic memory
+management within an enclave, but at the expense of greater enclave
+implementation complexity.
+%
+%Regardless...
+
+With SGX, an enclave packaging step produces a measurement of the enclave image by
+emulating the measurement tasks that the Intel hardware will perform when
+loading the enclave.
+%
+With codomains, however, it is not immediately clear what parts of the
+application constitute an enclave image.
+%
+This issue is, in part, bypassed by having the enclaved code simply be a loader
+program that dynamically loads the relevant portions of the application, but
+given that the executable pages could comprise only a small part of the
+application, and that the initial state of the data pages is generally unknown,
+it's not immediately clear what meaningful attestation the enclave could
+provide to a remote party.
 
 
-
-\subsection{Potentional Issues}
+\subsection{Additional Challenges}
+\label{sec:codomains-challenges}
 
 \parhead{Deadlock}
 %
@@ -658,26 +665,17 @@ methods for achieving differential privacy, such as by adding a carefully
 chosen amount of noise to the local results.
 
 
-\parhead{Integrity}
+%\parhead{Integrity}
 %
 % TODO: quote the work that criticizes keyless-ssl as just being an encryption
 % oracle.
 
 
 
-% TODO: for MEM_PIN_SWITCH, what is the resource_spec?
-
 % TODO: how is the pinned domain marked in the page table?  (a unique
 % memory protection key):.
-
-% TODO: what does the target argumet to switch() look like?  In other words,
-% how are domains represented form the application's point of view?
-%
-%
-% TODO: what would happen if the filesystem needed to be shared?
 %
 % TODO: what happens if pinned data is written to a descriptor/file?
-
 
 
 % TODO: try to translate switch() into a "remote" lwc:
