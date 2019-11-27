@@ -9,9 +9,9 @@ This assumption is valid when a party develops the software, owns the data,
 and administers the deployment infrastructure.
 %
 However, when these applications must run under a different deployment, such as
-on a third-party's cloud, or use a heterogenenous dataset, such as data from
-multiple parties, the application's original assumption of a monotlithic trust
-setting is no longer valid.
+on a third-party's cloud, or compute over heterogeneous datasets, such as data
+from multiple parties, the application's original assumption of a monotlithic
+trust setting is no longer valid.
 
 
 %% statement of problem (why big picture murky)
@@ -19,9 +19,10 @@ Unfortunately, the operational \emph{status quo} is either to ignore the issue,
 or restrict the scope of such applications.  
 %
 As a result, organizations outsource their applications to the cloud, despite
-exposing private data about itself and its patrons to the cloud operator, while
-data for healthcare providers and financial services remains confined to data
-islands, despite the important questions that they could answer in aggregate.
+exposing private data about themselves and their patrons to the cloud operator,
+while data from healthcare providers and financial services remains confined to
+data islands, despite the important questions that they could answer in
+aggregate.
 
 
 
@@ -73,8 +74,8 @@ In my preliminary work, \textbf{conclaves}, I assume the availability of Intel
 SGX secure hardware enclaves.
 %
 Conclaves extends prior work on SGX-based library operating systems (libOS) by
-extending a libOS to support a broader set of legacy services: namely,
-multi-process, shared resource, applications.
+supporting a broader set of legacy services: namely, multi-process, shared
+resource, applications.
 %
 My extensions result in a distributed system reminiscent of a microkernel,
 where each kernel service (for instance, a filesystem or shared memory)
@@ -115,13 +116,11 @@ running legacy applications in SGX\@.
 I also describe prior approachs to partitioning an application for the
 purposes of separate of privileges, some of which involve separation
 into enclave and non-enclave components.
-%%
-In \S\ref{sec:conclaves-summary}, I summarize my preliminary work.
+%
+In \S\ref{sec:conclaves-summary}, I summarize my preliminary work, conclaves.
 %
 In \S\ref{sec:codomains-intro}, I introduce the concept of codomains, and in
 \S\ref{sec:codomains-design} sketch their design.
 %
 I describe a set of evaluations for codomains in \S\ref{sec:codomains-eval},
 and conclude in \S\ref{sec:conclusion}.
-
-

@@ -10,7 +10,7 @@ analyzing the private data of multiple parties.
 
 
 \parhead{Outsourcing TLS applications}
-%
+%% setup
 I consider a company using a third-party, such as a cloud host or cloud
 service, to operate an application server.
 %
@@ -24,10 +24,8 @@ their content~\cite{key-sharing}.
 Historically, CDNs have been thought of as a massive web
 cache~\cite{cdn-on-demand}, but today’s CDNs play a critical role in achieving
 the performance and security that the web relies on~\cite{securing-cdns}.
-% TODO: additional sentence or phase
 
-
-
+%% why a problem? status quo?
 As a CDN requires the company's private TLS key to serve content over HTTPS,
 the \emph{status quo} is for the company to share or otherwise entrust the CDN
 with the application's private keys.
@@ -40,9 +38,9 @@ writ large, as the CDNs  can arbitrarily impersonate any of their customers.
 
 
 \parhead{Collaborative Data Processing}
-%
-I assume a multi-party setting, where the parties agree on an analysis to be
-performed, and the aggregate input for the analysis consists of the
+%% setup
+I consider a multi-party setting, where the parties agree on an analysis to be
+performed, and where the aggregate input for the analysis consists of the
 confidential, local, datasets of each party.
 % 
 The parties themselves might be mutually distrustful, or may simply be
@@ -51,17 +49,26 @@ prevented by law from sharing their data.
 The purpose of the analysis is to process the datasets to determine some
 non-confidential result.
 %
-With federated databases, the result may be the cardinality of an intersection
-across the datasets.
+% TODO: cite
+Common cases include a consortium of hospitals that want to pool their medical
+records for research, but cannot lawfully disclose arbitrary patient records,
+or a financial services industry  that must engage in a regulatory stress test,
+but where each member bank is unwilling to disclose account details
+with other financial institutions.
+
+
+In such situations, the members must either agree on a trusted intermediary to
+aggregate and analyze the data, or the analysis must be compartmentalized to
+each specific party, rather than performed system-wide  over all parties
+together.
+
+
+%With federated databases, the result may be the cardinality of an intersection
+%across the datasets.
 %
-With federated learning, the result may be the global model parameters (such
-as the weights of a deep neural network), derived from the aggregation of the
-parameters from each party's locally-trained model.
-
-
-
-% TODO: some small section about the security implications, or what we can't do
-% today because we don't have the right tools.
+%With federated learning, the result may be the global model parameters (such
+%as the weights of a deep neural network), derived from the aggregation of the
+%parameters from each party's locally-trained model.
 
 
 \subsection{Goals}
@@ -74,7 +81,7 @@ I distill my overarching goal down to three specifics:
 \begin{enumerate}
 \item \textbf{Preserve confidentiality of private data:}
     The execution environment \emph{must} maintain the confidentiality of the
-    private keys and private data sets of each party.
+    private keys and private datasets of each party.
 
 \item \textbf{Ensure data integrity:} 
     The execution environment \emph{should} preserve the integrity of each
@@ -85,14 +92,17 @@ I distill my overarching goal down to three specifics:
     monolithic application; if the run-time partitions the application
     across trust domains or otherwise uses a distributed execution
     environment, such an environment \emph{should} be transparent to the
-    application.
+    application.  
+    %
+    This requirement also implies that trust \emph{should} be
+    expressible as a policy configuration.
 \end{enumerate}
 
 % broader impact
 If successful, I will improve the security and privacy of the involved parties,
 thereby enabling more flexible application deployment options, and supporting
 the development of applications that leverage the collective knowledge of
-private data sets.
+private datasets.
 
 
 \subsection{Threat Model}
@@ -110,9 +120,9 @@ In fact, in this work, I  assume that the parties trust the application proper,
 and that the only place for mistrust is with the parties that run the
 application.
 %
-Indeed, guaranteeing that an \emph{untrusted}, \emph{arbitrary}, application
-does not leak sensitive data is difficult without restrictions on the
-application.
+In general, guaranteeing that an \emph{untrusted}, \emph{arbitrary},
+application does not leak sensitive data is difficult without restrictions on
+the application.
 
 
 I allow myself to assume several threat models.
@@ -121,12 +131,12 @@ The weakest threat model I assume is honest but curious: each party faithfully
 executes the program, but may analyze their portion of the execution to try to
 recover the private data of other principals.
 %
-The strongest threat model is a byzantine faulty adversary, where a party may
+The strongest I assume is a byzantine faulty adversary, where a party may
 abuse the interface between their execution, and that of another party.
 %
-The \emph{Iago} class of semantic attacks~\cite{iago-attacks}, which violate
+The \emph{Iago} class of semantic attacks~\cite{iago-attacks}, which violates
 tacit assumptions in inter-domain procedure calls---system calls, enclave
-calls, or RPCs---fall under this behavior.
+calls, or RPCs---falls under this behavior.
 %
 In this model, parties must validate the execution state against expected
 conditions during inter-domain transactions.
