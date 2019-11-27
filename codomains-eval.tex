@@ -1,43 +1,72 @@
-\section{Codomains Evaluation}
+\section{Codomains: Case Studies and Evaluation}
 \label{sec:codomains-eval}
 
+\subsection{Case Studies}
 
-\subsection{Macro-benchmarks}
+I explore three application case studies that differ in my expectation of the
+amount of refactoring required to support a heterogeneous trust setting through
+the use of codomains, starting with nearly transparent modifications, to
+writing an application from scratch using codomains.
+
 
 \parhead{Webserver}
 %
-I evaluate the request throughput and latency of a webserver, such as NGINX,
-running in a standard Linux environment, and compare against a configuration of
-the webserver running with codomains, where a separate domain isolates each
-website's private TLS key.
+My goal is to run a webserver on a third-party machine, and use codomains to
+isolate the website's private TLS key.
+%
+My expectation is that this feature requires minimal application changes,
+and that such changes may be transparent to the application if a taint-tracking
+monitor can implicitly switch domains on behalf of the application during
+private key accesses.
+
+
+I evaluate the request throughput and latency of the webserver running in a
+standard Linux environment, and compare against a configuration of the
+webserver running with codomains.
 %
 I also compare the codomain version of the webserver to 
 static partitioning schemes~\cite{eleos,glamdring,privtrans} that achieve
 the same isolation.
 %
-When comparing to static partitioning schemes, I am interested not only in the
-performance differences, but also the difference in the boundaries that
+When comparing to static partitioning schemes, I investigate not only the
+performance differences, but also differences in the boundaries that
 each scheme determines.
 %
 The benchmark affords multiple variants, such as investigating how codomains
 scale with multiple tenants (multiple websites multiplexed by the same
-webserver), how the system performs when the webserver itself contains
-private data that must be cloaked from tenants, how well different server
-models (such as multi-process vs. multi-threaded) interact with codomains, and
-how host-codomains compare to enclave-codomains.
+webserver), how the system performs when the webserver itself contains private
+data that must be cloaked from tenants, how well different server models (such
+as multi-process and multi-threaded) interact with codomains, and how
+host-codomains compare to enclave-codomains.
 
 
-\parhead{Federated Data Analysis}
+\parhead{Federated Databases}
+%
+I assume a database that already supports federation, such as PostgreSQL,
+but where the implementation does not preserve the privacy of each party's
+database.
+%
+My goal is to modify the database's query planner so that relational operators
+that compute on  data from two distrustful parties execute within an
+enclave-codomain.
+%
+My expectation is that I will modify the database engine, but that the
+database applications themselves (the queries) will remain unchanged.
 
 
 \parhead{Federated Learning}
+%
+I implement a suite of machine learning algorithms in a federated setting using
+codomains, and compare performance against an existing federated framework,
+such as TensorFlow-federated, as well as non-federated frameworks (which
+assume all parties upload data to a single trusted party).
 
 
 \subsection{Micro-benchmarks}
 
-With the micro-benchmarks, I am interested in isolating and measuring the cost
+I want to isolate and measure the cost
 of each facet of codomains---thread migration, taint tracking, the DSM
-protocol.
+protocol---through a series of micro-benchmarks.
 %
 For such purposes, I envision developing a small set of multi-party programs
 drawn from the literature, such as:
@@ -49,6 +78,8 @@ server's host.
 %
 \item \textbf{Richest protocol:} Computes the richest principal.
 %
+\item \textbf{Private set intersection:} Compute the intersection of the each
+    principal's dataset, or the cardinality of that intersection.
 \item \textbf{GPS protocol:} For each participating principal,
 computes the peer that is nearest to their location; each principal learns
 their nearest neighbor without learning anyone's exact location.
@@ -58,9 +89,9 @@ participating principals, as well as the second-highest bid, which is revealed
 to everyone; only the auction holder learns the winning bidder.
 \end{widelist}
 
-For the timestamp signing server, I am interested in how closely a
+For the timestamp signing server, I investigate how closely a
 packet capture of the thread migration between codomains approximates
-that of an alternative RPC-based implementation, such as keyless SSL\@?
+that of an alternative RPC-based implementation, such as keyless SSL\@.
 %
 In particular, how much traffic and how many round-trips does a codomain switch
 incur, what is the purpose of each round-trip, and what is the corresponding
@@ -76,6 +107,7 @@ Direct overhead costs include network latency, while indirect costs include the
 operations of checkpointing and restoring threads, as well as any TCP queuing
 delays incurred by the source host while its thread is paused, waiting for
 a return migration.
+
 
 \subsection{Correctness}
 
