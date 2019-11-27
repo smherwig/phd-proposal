@@ -42,16 +42,53 @@ host-codomains compare to enclave-codomains.
 
 \parhead{Federated Databases}
 %
-I assume a database that already supports federation, such as PostgreSQL,
-but where the implementation does not preserve the privacy of each party's
-database.
+I assume a \emph{federated database system}---a system of many
+autonomous databases that share a schema and unite to appear as a single
+engine for querying. 
 %
-My goal is to modify the database's query planner so that relational operators
-that compute on  data from two distrustful parties execute within an
-enclave-codomain.
+I assume the federation spans mutually distrustful sources that are unable to 
+aggregate their data on a neutral third-party.
 %
-My expectation is that I will modify the database engine, but that the
-database applications themselves (the queries) will remain unchanged.
+My goal is to allow queries that preserve the privacy of each party's data by
+modifying the database engine so that operators that compute solely on one
+party's data execute on that party's database, and operators that compute on
+data from multiple distrustful parties execute within an enclave-codomain.
+%
+As my concern is concealing the query's computation, and I assume that the
+system may use orthogonal approaches, such as query filters or different
+privacy techniques, to guard against malicious queries.
+
+
+My expection is to isolate code modifications to the query planner and
+executor, and that the database
+applications themselves (the queries) remain unchanged. 
+%
+To that end, from the user's perspective, the system should behave
+exactly like a conventional federated database where one submits SQL and
+receives query results. 
+%
+Although the database system may require security policy at startup, which the
+query planner would use in modeling the flow of sensitive data throughput its
+operator tree, the user should not have to reason about how to combine the data
+of each party.
+
+
+I envision testing the system on synthetic medical data, and simulating a
+federated system of partnering hospitals.
+%
+I imagine benchmarking and evaulating a set of representative clinical queries
+that compute aggregate counts of disease comorbidities and treatment outcomes,
+and comparing the query latencies to that of a monolithic database that
+aggregates the data of all parties.
+
+
+
+% TODO: what sort of data and queries are you going to explore?
+
+
+%My goal is to modify the database's query planner so that relational operators
+%that compute on  data from two distrustful parties execute within an
+%enclave-codomain.
 
 
 \parhead{Federated Learning}
