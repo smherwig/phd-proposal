@@ -58,6 +58,29 @@ Management Mode (SMM) by running device drivers in SMM memory.
 
 
 \parhead{Side Channels}
+%
+There is a recent rise of side-channel attacks against SGX, including the
+speculative execution attack Foreshadow~\cite{foreshadow,
+weisse2018foreshadow}.  
+%
+This attack allows for the extraction of not only the entire SGX enclave's
+memory contents but also the attestation and sealing keys.  
+
+
+Intel has stated that SGX is explicitly designed to not deal
+with side-channel attacks in its current state and leaves handling this up to
+enclave developers~\cite{sgx-sidechannel, sgx-developers}.
+%
+Regardless, Intel has released both microcode patches and recommendations for
+system level code that at the current time address Foreshadow and known related
+attacks \cite{sgx-patch, canella2018systematic, weisse2018foreshadow}.  
+%
+There is also ongoing research to address both speculative execution as well as
+other cache-based side-channel attacks on SGX and in general
+\cite{yan2018invisispec, oleksenko2018varys, canella2018systematic, shih2017t}.
+%
+I consider protections against such side-channel attacks to be outside of the
+scope of this work and rely on these defenses.
 
 
 \subsection{Program Partitioning}
