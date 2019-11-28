@@ -1,27 +1,16 @@
 \section{Conclaves Summary}
 \label{sec:conclaves-summary}
-% XXX: keep to ~4 pages
 
-At a high level, my approach is to deploy applications in enclaves.
+I designed and implemented \emph{conclaves}~\cite{phoenix-conclaves}---a
+container of enclaves---as a solution for a party to run multi-process
+applications that compute with sensitive data on an untrusted third-party
+machine.
 %
-However, doing so in a manner that permits multi-tenancy and support
-for legacy applications is challenging.
-%
-%
-Recall from \S\ref{sec:sgxbackground} that libOSes expose traditional
-OS kernel services within an enclave, and either handle the system calls
-themselves or, when necessary (e.g., to send a network packet), hand
-them off to the untrusted OS.
-%
-Conversely, I aim to be able to support dynamic scaling up and down of
-web servers, tenant configurations, and security postures.
-
-To address these challenges, I introduce a new architectural primitive that we
-call a \emph{conclave}: in essence a container of enclaves.
-%
-As I will show, conclaves permit flexible deployment configurations and
-achieve security in multi-tenant settings.
-
+As a motivating use case, I focus on a content provider using a CDN to serve
+their HTTPS website; the CDN's webservers run in a conclave, thereby guarding
+the content provider's private TLS key, the TLS session keys, and optionally
+the content itself, eseentially reducing the adversarial power of the CDN to
+that of an on-path TLS attacker.
 
 \subsection{Design and Implementation}
 
