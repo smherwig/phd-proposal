@@ -1,6 +1,11 @@
 \section{Codomains: Case Studies and Evaluation}
 \label{sec:codomains-eval}
 
+I explore programming with codomains through a series of application case
+studies that highlight different scenarios and objectives, and propose methods
+for measuring system performance and assessing behavioral correctness.
+
+
 \subsection{Case Studies}
 
 I explore three application case studies that differ in my expectation of the
@@ -54,7 +59,7 @@ modifying the database engine so that operators that compute solely on one
 party's data execute on that party's database, and operators that compute on
 data from multiple distrustful parties execute within an enclave-codomain.
 %
-As my concern is concealing the query's computation, and I assume that the
+As my concern is concealing the query's computation, I assume that the
 system may use orthogonal approaches, such as query filters or different
 privacy techniques, to guard against malicious queries.
 
@@ -68,7 +73,7 @@ exactly like a conventional federated database where one submits SQL and
 receives query results. 
 %
 Although the database system may require security policy at startup, which the
-query planner would use in modeling the flow of sensitive data throughput its
+query planner would use in modeling the flow of sensitive data throughout its
 operator tree, the user should not have to reason about how to combine the data
 of each party.
 
@@ -97,6 +102,13 @@ I implement a suite of machine learning algorithms in a federated setting using
 codomains, and compare performance against an existing federated framework,
 such as TensorFlow-federated, as well as non-federated frameworks (which
 assume all parties upload data to a single trusted party).
+%
+With federated learning, the result may be the global model parameters (such
+as the weights of a deep neural network), derived from the secure aggregation of the
+parameters from each party's locally-trained model.
+%
+In particular, each party locally trains in a party-specific codomain, and the
+secure aggregation occurs in a shared enclave-codomain.
 
 
 \subsection{Micro-benchmarks}
@@ -115,7 +127,7 @@ server's host.
 %
 \item \textbf{Richest protocol:} Computes the richest principal.
 %
-\item \textbf{Private set intersection:} Compute the intersection of the each
+\item \textbf{Private set intersection:} Compute the intersection of each
     principal's dataset, or the cardinality of that intersection.
 \item \textbf{GPS protocol:} For each participating principal,
 computes the peer that is nearest to their location; each principal learns
