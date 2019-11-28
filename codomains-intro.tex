@@ -5,25 +5,30 @@ A cooperative domain, or \emph{codomain}, is an isolation domain
 that a thread may migrate to over the course of its evolution, such as another
 process, another host, or an SGX hardware enclave.
 %
-I explore system primitives for codomains that enable a developer to write a
-monolithic program that executes over multiple domains, with the underlying
-system being responsible for moving the execution between domains, maintaining
-resource consistency across domains, and restricting information flow among
-domains.
+I explore system primitives for using codomains that enable a developer to
+write a monolithic program that executes over multiple domains, with the
+underlying system being responsible for moving the execution between domains,
+maintaining resource consistency across domains, and restricting
+information flow among domains.
+%
+The application need not directly construct codomains; a monitor or emulator
+could do so on the process's behalf, thereby enabling opportunities for
+instrumentating existing, legacy, applications.
 %
 In contrast to prior work in program partitioning, codomains present
 a language-neutral, run-time mechanism for switching domains, rather than
 resorting to language-specific or compile-time techniques.
 
 
-
+\parhead{Codomains vs. Conclaves}
+%
 Codomains are orthogonal to conclaves, though the implementation may
 use conclaves to support SGX domains.
 %
 Codomains further differ from conclaves with respect to use cases, and the
 method for constructing trust boundaries.
 %
-Whereas conclaves are a solution for preserving the confidentially of a single
+Whereas conclaves are a solution for preserving the confidentiality of a single
 \footnote{
 Conclaves may comprise
 multiple parties, but these parties must trust one another (or, as in
@@ -46,15 +51,4 @@ the application's evolution, and data, rather than code, may drive the boundary
 construction.
 %
 Finally, whereas conclaves take an approach of hoisting the entire application
-into enclaves; codomains use enclaves in an on-demand, as needed, fashion.
-
-
-% TODO: sentence or two lead-in to the rest of the sections
-
-
-%If mode-switching is dynamic and language-neutral, then orthogonal, application
-%interposition techniques, may be layered onto the system to increase the
-%transparency of the multi-domain environment with respect to the application.
-
-
-
+into enclaves, codomains use enclaves in an on-demand, as needed, fashion.

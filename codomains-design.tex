@@ -2,15 +2,14 @@
 \label{sec:codomains-design}
 
 In this section, I explore the concept of codomains to arrive at an
-application programming interface (API) for developing programs for such an
-execution model.
+API for developing programs for such an execution model.
 %
 The core features I need are pinning data to a domain and switching
 (migrating) between domains, while the core challenges I face are providing
 resource consistency and mechanism transparency.
 %
-I first introduce the coprocess abstraction, and then describe how we
-implement codomains on top of coprocesses.
+I first introduce a building-block abstraction called coprocesses, and then
+describe how I implement codomains on top of coprocesses.
 %
 I then discuss techniques for \emph{backfitting} codomains, at run-time, onto legacy
 application binaries by means of running the application on a
@@ -18,7 +17,7 @@ taint-tracking-enhanced emulator.
 %
 Under this scheme, a user specifies a data policy that defines the domains and
 their access privileges to the various application data, and the emulator
-handles switching execution on data access based on these privileges.
+handles switching domains on data access based on these privileges.
 %
 I conclude with challenges that I anticipate when implementating codomains and
 applying them to applications.
@@ -131,10 +130,10 @@ The coprocess checkpoints the process's thread and then makes a remote request
 to a service in domain B\@.
 %
 B's service may either be a coprocess, or a service that executes a new
-coprocess.
+coprocess---a \emph{coprocess server}.
 %
-Regardless the service must also execute a stub program that first attaches to the
-coprocess and then launches a loader that restores A's thread.
+Regardless, the service must also execute a stub program that first attaches to
+the coprocess and then launches a loader that restores A's thread.
 %
 Any page faults during the restoration process trap to the coprocess on B,
 which may request the page from the coprocess on A.
@@ -318,7 +317,7 @@ int co_setrspec(int fd, struct co_rspec *rspec)
 \parhead{Distributed Shared and Cloaked Memory}
 %
 %% why codomains need DSM
-For multi-threaded and multi-process applications, we must consider how the
+For multi-threaded and multi-process applications, I must consider how the
 system maintains consistency of memory layout and coherency of shared memory
 among threads operating concurrently on multiple codomains.
 %
