@@ -492,6 +492,26 @@ secure channels with one another.
 
 \subsection{Evaluation}
 
+We evaluate the performance of NGINX 1.14.1 running within a conclave.
+%
+We examine three conclave configurations: (1) \emph{Linux-keyless}: NGINX
+running on normal Linux and using a keyserver, (2) \emph{Graphene-crypt}: NGINX
+running on Graphene and using a bd-crypt fsserver, sm-crypt for shared memory,
+and the keyserver, and (3) \emph{Graphene-vericrypt}:  NGINX running on
+Graphene and using a bd-vericrypt fsserver, sm-vericrypt for shared memory,
+and a keyserver.
+%
+These correspond to a Keyless-SSL analog, a conclave deployment for data
+confidentiality, and a conclave deployment for both data confidentiality and
+integrity, respectively.  We compare these conclaves to the status quo of NGINX
+running on standard Linux (simply denoted as \emph{Linux}).
+%
+We use ApacheBench to repeatedly fetch a file 10,000 times over non-persistent
+HTTPS connections (each request involves a new TCP and TLS handshake) from
+among 128 concurrent clients
+\footnote{That is, the command \texttt{ab -n 10000 -c 128}}.
+
+
 Figure~\ref{fig:macrobench-single-tenant-lat-throughput} shows
 request latency and throughput results for the four configurations.
 %
