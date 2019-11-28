@@ -496,60 +496,90 @@ main() {
 \subsection{Supporting Legacy Applications with Codomains}
 \label{sec:codomains-legacy-apps}
 
-In Listing~\ref{lst:isolating-key}, partitioning the application simply
-involved wrapping functions that access private data with calls to
-\texttt{co\_switch}.
-%
-Consider the case where a party's private data cannot be encapsulated in a
-functional interface.
+%% Problem and definitions
+Consider trying to partition a black-box, trusted application, that requires a
+party's sensitive input, such that the sensitive input does not leak to other
+parties.
 %
 My approach is to run the process under a \emph{dynamic binary
 instrumentation} (DBI) framework.
 %
-DBI frameworks consist of an emulator that instruments and dispatches the
-application's code, allowing the emulator to regain control at the end of each
-basic block\footnote{A \emph{basic block} is roughly a sequence of instructions
-that terminates in a jump.}.
+DBI frameworks~\cite{intel-pin,dynamorio,valgrind} consist of an emulator that
+instruments and dispatches the application's code, allowing the emulator to
+regain control at the end of each basic block.\footnote{A \emph{basic block} is
+roughly a sequence of instructions that terminates in a jump.}
 %
-I provide instrumentation code that tracks the propagation of the sensitive
-data over the course of the computation; as sensitive data taints other data,
+I provide instrumentation code that performs
+\emph{taint-tracking}~\cite{taint-tracking,libdft}---that is, tracks the
+propagation of the sensitive data throughout the memory space over the course
+of execution.\footnote{
+Composing codomains with a taint-tracking DBI framework is also potentially
+beneficial as a ``safety belt" for programs that may inadvertently leak
+sensitive data, and when private data cannot be encapsulated in a functional
+interface.
+}
+%
+As sensitive data taints other data,
 the instrumented instructions invoke \texttt{co\_pinmem} on the associated
 data's page.
 
 
-With this  method, I still assume that sensitive data is programmatically
-introduced (as through \texttt{struct co\_rspec}), and that a coprocess
-implicitly invokes \texttt{co\_switch} when a domain faults accessing cloaked
-data.
+\parhead{Taint Policy}
 %
-However, it is not entirely obvious how the process, once migrated to the data
-owning domain and running under a DBI framework, safely invokes
-\emph{co\_switch} to switch back to the original faulting domain.
+The principals of the system specify as configuration to the coprocesses the
+initial tainted data, namely the tainted files and the domains that own or
+otherwise may access such files.
 %
-In general, such migration conditions are application-specific.
+The coprocess must then ensure that if its process is computing with such
+tainted data, that the process is run under the DBI emulator.
 %
-One application could simply wait until the process similarly faults on
-cloaked data; another could add instrumetation that invokes
-\texttt{co\_switch} after so many instructionrs have executed sequentially over
-non-sensitive; and yet another could wait for the next programmatic instance of
-\texttt{co\_switch}.
+Processes that do not have privileges to read the tainted data do not need to
+perform taint-tracking, and thus do not need to be run under an emulator; their
+associated coprocess implicitly invokes \texttt{co\_switch} when the process
+faults accessing such cloaked data.
 
 
-Composing codomains with a taint-tracking DBI framework is potentially
-beneficial in two other respects: (1) as a ``safety belt" for programs
-that may inadvertently leak sensitive data, and (2) as a method for
-partitioning black-box, trusted applications, that require a party's sensitive
-input, such that the sensitive input does not leak to other parties.
+%% conditions for migrating-back
+A thread that is running under a DBI framework may switch to the
+original faulting domain under several configuration-specific conditions.
 %
-With black-box partitioning, the DBI framework may have to declassify tainted
-data for liveness concerns; for instanace, taint-tracking instrumention would
+One configuration option is to wait until the process similarly faults on
+cloaked data; another is to add instrumentation that invokes
+\texttt{co\_switch} after so many instructions have executed sequentially over
+non-sensitive data; and yet another is to wait for the next programmatic
+instance of \texttt{co\_switch}.
+
+
+\parhead{Declassification}
+%
+With black-box partitioning, the DBI framework may also have to declassify tainted
+data for liveness concerns; for instance, taint-tracking instrumentation would
 mark a signature as tainted, even though it is not semantically sensitive.
 %
-Declassificaiton requires hooking at least the epilogues of such functions.
+Declassification requires hooking at least the epilogues of such functions---in
+essence, a \emph{declassification gate}.
 %
-In essence, this results in \emph{half-wrapping}, whereby a domain could be
-migrated to at any point based on faults, but has well-defined exit points and
-exit conditions.
+The need for the DBI to install such gates slightly weakens the black-box
+assumption, as program symbols would need to be available to
+the DBI, or to a tool that configures the DBI\@.
+%
+The combination of switching domains on access to cloaked data and switching
+back following a classification gate results in a sort-of \emph{half-wrapping},
+whereby a domain could be migrated to at any point based on faults, but has
+well-defined exit points and exit conditions.
+
+
+With declassification gates, the codomain  must additionally guard against
+attempts by an adverserial codomain to hijack declassification.
+%
+For instance, the peer could arrange for the thread to be restored with a
+starting point that invokes \texttt{sign(0, key})---that is, ``signs" the real
+private key with a null private key---thereby declassifying the real key.
+%
+Thus, the target must properly sanitize a gate's arguments.
+
+
+
 
 
 \subsection{Enclaves as Codomains}
