@@ -202,7 +202,7 @@ in the process's kernel-level file descriptor table.
 On line 25, the process calls \texttt{load\_key}, which then invokes
 \texttt{co\_switch} to switch to \texttt{domain\_priv}.
 %
-\texttt{co\_switch} checkpoints the thread on \texttt{domain\_pub} and restore
+\texttt{co\_switch} checkpoints the thread on \texttt{domain\_pub} and restores
 the thread on \texttt{domain\_priv}.
 %
 \texttt{co\_switch} returns a descriptor representing the domain that
@@ -246,8 +246,8 @@ Listing~\ref{lst:coproc-api}; in particular, \texttt{co\_attach},
 \texttt{co\_getrspec} and \texttt{co\_setrspec} invoke \texttt{coproc\_call},
 and \texttt{co\_switch} invokes \texttt{coproc\_raise}.
 %
-Auxiliary functions like \texttt{co\_pinmem} used in
-Listing~\ref{lst:isolating-key}, and analogous functions for pinning other
+Auxiliary functions like \texttt{co\_pinmem} (used in
+Listing~\ref{lst:isolating-key}), and analogous functions for pinning other
 resource types, are implemented on top of \texttt{co\_setrspec}.
 
 % XXX: compare to 9p protocol: http://man.cat-v.org/plan_9/5/intro
@@ -331,9 +331,10 @@ shared address space accessible through the conventional memory access protocols
 (in contrast to message passing).
 %
 DSM protocols differ with regard to data granularity, synchronization,
-and consistency models.
+and consistency models, though page-based granularity and \emph{sequential
+consistency} are common.
 %
-A common paradigm is the use of  write-invalidations: each domain
+A common paradigm is the use of write-invalidations: each domain
 write-protects shared pages; when a domain tries to write to such a page, a
 protection fault occurs.
 %
@@ -369,9 +370,10 @@ Two conventional uses for C/R are live migration of containers,
 and the incremental snapshotting of an application, as for recovery
 after a crash, outage, or malware infection.
 %
-% TODO: cite sprite/dmtcp/popcorn-linux/criu
-Several research and commercial systems implement C/R, but CRIU, which manages
-the operation from userspace, is the \emph{de facto} standard on Linux.
+Several research and commercial
+systems~\cite{transparent-process-migration,dmtcp,popcorn-migration} implement
+C/R, but CRIU~\cite{criu}, which manages the operation from userspace, is the
+\emph{de facto} standard on Linux.
 %
 For the purposes of querying the kernel for a process's state, and later
 passing that state back to the kernel when restoring the process,
@@ -386,7 +388,7 @@ decisions, and assumptions.
 %
 The major points of incongruity are (1) the coarse-grained C/R of a process vs.
 the fine-grained C/R of a thread; (2) infrequent vs. frequent C/R operations
-(and the application's associated senstivity to the latency of the operation);
+(and the application's associated sensitivity to the latency of the operation);
 (3) the inverse nature of checkpointing with restoring vs. C/R in the presence
 of cloaked data and resources; and (4) the use of C/R to move a whole system,
 rather than using C/R to distribute a single system.
@@ -394,7 +396,7 @@ rather than using C/R to distribute a single system.
 I merely bring up these issues to note that the codomain design does not
 necessarily entail an implementation that bundles existing functionality, and
 that an implementation might instead add kernel functionality such that the
-coprocess can retrived thread state from a process descriptor.
+coprocess can retrieve thread state from a process descriptor.
 
 
 \parhead{Parallel Execution}
