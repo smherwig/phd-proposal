@@ -257,7 +257,7 @@ from a secure channel, to prevent data leakage.
 
 
 Ryoan~\cite{ryoan} also uses SGX enclaves, but assumes a directed acyclic graph
-execution model where each party receives input from a peer, process the input,
+execution model where each party receives input from a peer process 
 and sends its output to another party.
 %
 Ryoan runs each party's processing modules in a trusted userspace sandbox,
@@ -269,7 +269,7 @@ secret data.
 %
 When operating on tainted data, Ryoan ensures that the module cannot leak data
 by controlling explicit I/O channels, obfuscating network traffic, forbidding
-use of the fileystem, and ensuring that input is only processed once.
+use of the filesystem, and ensuring that input is only processed once.
 
 
 Wysteria~\cite{wysteria} is a high-level language for writing \emph{secure

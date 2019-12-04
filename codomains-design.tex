@@ -30,7 +30,7 @@ A \emph{coprocess} is a process to which a client process yields its
 execution.
 %
 My interest with coprocesses is handling, in userspace, services requisite to
-codomains: distributed shared memory, distributed fileystems, and the
+codomains: distributed shared memory, distributed filesystems, and the
 checkpointing and restoring of the client process, while further enabling both
 explicit and implicit yields to these services.
 %
@@ -418,7 +418,7 @@ whether codomains can augment MPI; I leave this as interesting future work.
 }
 
 
-For such computations, maintaining the memory and fileystem consistency across
+For such computations, maintaining the memory and filesystem consistency across
 codomains may not be a concern; it may be more natural for threads running in
 separate codomains to have their own private address space and file system that
 a master codomain has initialized.

@@ -9,7 +9,7 @@ machine.
 As a motivating use case, I focus on a content provider using a CDN to serve
 their HTTPS website; the CDN's webservers run in a conclave, thereby guarding
 the content provider's private TLS key, the TLS session keys, and optionally
-the content itself, eseentially reducing the adversarial power of the CDN to
+the content itself, essentially reducing the adversarial power of the CDN to
 that of an on-path TLS attacker.
 
 \subsection{Design and Implementation}
@@ -19,7 +19,7 @@ that of an on-path TLS attacker.
 \begin{figure}
 \centering
 \includegraphics[width=0.48\textwidth]{figs/phoenix-design}
-	\caption{Architectural design of \name. Multiple enclaves (yellow
+	\caption{Architectural design of a CDN webserver using conclaves. Multiple enclaves (yellow
 	boxes) reside in a logical conclave (red boxes), permitting
 	multiple processes and multi-tenant deployments. The CDN Edge and
 	Core servers run on untrusted hosts.}
@@ -438,7 +438,7 @@ as a root of trust and enclave attestation as a form of authenticated identity,
 and to merge this form of attestation into the establishment of the shared
 channel secret.
 %
-To that end, \name follows closely from the work of Knauth et
+To that end, conclaves follows closely from the work of Knauth et
 al.~\cite{DBLP:journals/corr/abs-1801-05863}, which 
 integrates attestations with TLS by adding the SGX quote as an X.509
 certificate extension.
@@ -536,7 +536,7 @@ all conclave configurations.
 
 \begin{figure}[t]
 	\centering
-    \includegraphics[width=0.5\textwidth]{figs/macrobench-single-tenant-lat-throughput}
+    \includegraphics[width=\textwidth]{figs/macrobench-single-tenant-lat-throughput}
 	%
 	\caption{Throughput and latency for single tenant configurations.
     The legend indicates the number of NGINX worker processes.
