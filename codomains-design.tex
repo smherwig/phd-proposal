@@ -19,7 +19,7 @@ Under this scheme, a user specifies a data policy that defines the domains and
 their access privileges to the various application data, and the emulator
 handles switching domains on data access based on these privileges.
 %
-I conclude with challenges that I anticipate when implementating codomains and
+I conclude with challenges that I anticipate when implementing codomains and
 applying them to applications.
 
 
@@ -71,7 +71,7 @@ argument the path representing the coprocess.
 %
 Analogous to how calling \texttt{accept} on a listening socket returns an
 active client socket, calling \texttt{accept} on the coprocess's descriptor
-returns a \emph{process decriptor} for an attaching process.
+returns a \emph{process descriptor} for an attaching process.
 %
 A process may have at most one coprocess, and a coprocess may service multiple
 processes.
@@ -570,7 +570,7 @@ well-defined exit points and exit conditions.
 
 
 With declassification gates, the codomain  must additionally guard against
-attempts by an adverserial codomain to hijack declassification.
+attempts by an adversarial codomain to hijack declassification.
 %
 For instance, the peer could arrange for the thread to be restored with a
 starting point that invokes \texttt{sign(0, key})---that is, ``signs" the real

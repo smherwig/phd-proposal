@@ -64,7 +64,7 @@ system may use orthogonal approaches, such as query filters or different
 privacy techniques, to guard against malicious queries.
 
 
-My expection is to isolate code modifications to the query planner and
+My expectation is to isolate code modifications to the query planner and
 executor, and that the database
 applications themselves (the queries) remain unchanged. 
 %
@@ -81,8 +81,8 @@ of each party.
 I envision testing the system on synthetic medical data, and simulating a
 federated system of partnering hospitals.
 %
-I imagine benchmarking and evaulating a set of representative clinical queries
-that compute aggregate counts of disease comorbidities and treatment outcomes,
+I imagine benchmarking and evaluating a set of representative clinical queries
+that compute aggregate counts of disease comorbidity and treatment outcomes,
 and comparing the query latencies to that of a monolithic database that
 aggregates the data of all parties.
 
@@ -128,7 +128,7 @@ server's host.
 \item \textbf{Richest protocol:} Computes the richest principal.
 %
 \item \textbf{Private set intersection:} Compute the intersection of each
-    principal's dataset, or the cardinality of that intersection.
+    principal's data set, or the cardinality of that intersection.
 \item \textbf{GPS protocol:} For each participating principal,
 computes the peer that is nearest to their location; each principal learns
 their nearest neighbor without learning anyone's exact location.

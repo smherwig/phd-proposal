@@ -9,7 +9,7 @@ This assumption is valid when a party develops the software, owns the data,
 and administers the deployment infrastructure.
 %
 However, when these applications must run under a different deployment, such as
-on a third-party's cloud, or compute over heterogeneous datasets, such as data
+on a third-party's cloud, or compute over heterogeneous data sets, such as data
 from multiple parties, the application's original assumption of a monolithic
 trust setting is no longer valid.
 
@@ -50,7 +50,7 @@ performance, or resource utilization, my focus instead is on using them as a
 means for constructing and enforcing isolation boundaries that reflect the
 application's principals and their trust assumptions.
 %
-Since the execution enviornment is transparent to the application, 
+Since the execution environment is transparent to the application, 
 it may be modified, partitioned, or distributed across domains of varying
 trustworthiness, so as to reflect multi-party security goals.
 %
@@ -103,7 +103,7 @@ for domain switches and data pinning, the design allows a monitor to implicitly
 and transparently call such functions on the application's behalf.
 %
 In its extreme, codomains allow the trust policy to be data-centric, with parties
-specifing which data must be isolated from other parties and how data may flow
+specifying which data must be isolated from other parties and how data may flow
 throughout the system.
 
 
@@ -114,7 +114,7 @@ the problem setup, the threat model, and the system goals.
 In \S\ref{sec:related}, I provide an overview of Intel SGX  and techniques for
 running legacy applications in SGX\@.
 %
-I also describe prior approachs to partitioning an application for the
+I also describe prior approaches to partitioning an application for the
 purposes of separate of privileges, some of which involve separation
 into enclave and non-enclave components.
 %
